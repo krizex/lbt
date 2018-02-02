@@ -12,9 +12,8 @@ import talib
 
 
 def add_rsi(df, period):
-    close = [float(x) for x in df['close']]
-    df['RSI'] = talib.RSI(np.array(close), timeperiod=period)
-    return df
+    close = np.array([float(x) for x in df['close']])
+    df['RSI'] = talib.RSI(close, timeperiod=period)
 
 
 
