@@ -14,12 +14,6 @@ Created on 01/31/2018
 import tushare as ts
 
 
-class LoopbackResult(object):
-    def __init__(self, benefit, ops):
-        self.benefit = benefit
-        self.ops = ops
-
-
 class Stock(object):
     def __init__(self, code):
         self.code = code
@@ -29,13 +23,13 @@ class Stock(object):
     def add_rsi(self, period):
         self.df = add_rsi(self.df, period)
 
-    def set_loopback_result(self, benefit, ops):
-        self.loopback_result = LoopbackResult(benefit, ops)
+    def set_loopback_result(self, result):
+        self.loopback_result = result
 
     def print_loopback_result(self):
         log.info('%s %f%% %s' % (self.code, self.loopback_result.benefit * 100, ' '.join(self.loopback_result.ops)))
 
-    def is_time_to_buy(self, rsi_in):
+    def is_time_to_buy_by_rsi(self, rsi_in):
         return self.df.loc[self.df.shape[0] - 1]['RSI'] <= rsi_in
 
     def get_benefit(self):
