@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from quant.index.ma import add_ma
+from quant.index.rsi import add_rsi
+from quant.index.macd import add_macd
 from quant.logger.logger import log
-from quant.macd import add_macd
-from quant.rsi import add_rsi
 
 __author__ = 'Yang Qian'
 
@@ -32,19 +33,36 @@ class Stock(object):
     def add_macd(self):
         add_macd(self.df)
 
+    def add_ma(self, period):
+        add_ma(self.df, period)
+
     def set_loopback_result(self, result):
         self.loopback_result = result
 
     def print_loopback_result(self):
-        log.info('%s %f%% %s' % (self.code, self.loopback_result.benefit * 100, ' '.join(self.loopback_result.ops)))
+        log.info('%s %s %f%%' % (self.code, self.info['name'].decode('utf8'), self.loopback_result.benefit * 100))
+        out = []
+        for op in self.loopback_result.ops:
+            out.append(op)
+            if len(out) == 2:
+                log.info('%s', ' '.join(out))
+                out = []
+
+        if out:
+            log.info('%s', ' '.join(out))
 
     def is_time_to_buy_by_rsi(self, rsi_in):
-        return self.df.loc[self.df.shape[0] - 1]['RSI'] <= rsi_in
+        today = self.df.shape[0] - 1
+        return self.df.loc[today]['RSI'] <= rsi_in
 
     def is_time_to_buy_by_macd(self):
         yesterday = self.df.shape[0] - 2
         today = self.df.shape[0] - 1
         return self.df.loc[yesterday]['MACD'] < 0 < self.df.loc[today]['MACD']
+
+    def is_time_to_buy_by_ma(self):
+        today = self.df.shape[0] - 1
+        return self.df.loc[today]['close'] <= self.df.loc[today]['MA']
 
     def get_benefit(self):
         return self.loopback_result.benefit
