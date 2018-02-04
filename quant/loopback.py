@@ -24,6 +24,18 @@ class LoopbackResult(object):
         self.ops = ops
 
 
+class LoopInterResult(object):
+    def __init__(self):
+        self.last_macd = 0.0
+
+
+class Op(object):
+    def __init__(self):
+        self.op_in = ''
+        self.op_out = ''
+        self.benefit = 0.0
+
+
 class Loopback(object):
     __metaclass__ = ABCMeta
 
@@ -33,6 +45,7 @@ class Loopback(object):
         self.to_date = to_date
         self.stop_loss = stop_loss
         self.stocks = None
+        self.inter_result = LoopInterResult()
 
     def init(self):
         self.stocks = self.fetch_stocks()
@@ -95,8 +108,62 @@ class Loopback(object):
             except Exception as e:
                 pass
 
-    @abstractmethod
+    def _loop_range(self, df):
+        row_from = df.loc[df['date'] == self.from_date].index[0]
+        if self.to_date:
+            row_to = df.loc[df['date'] == self.to_date].index[0]
+        else:
+            row_to = df.shape[0]
+
+        return row_from, row_to
+
+    def _set_inter_result(self, row):
+        pass
+
+    def _init_inter_result(self):
+        pass
+
     def loopback_one(self, stock):
+        row_from, row_to = self._loop_range(stock.df)
+        df = stock.df[row_from:row_to]
+        hold = False
+        benefit = 1.0
+        in_price = 0.0
+        ops = []
+        self._init_inter_result()
+        for _, row in df.iterrows():
+            if not hold:
+                if self.is_time_to_buy(row):
+                    hold = True
+                    in_price = row['close']
+                    op = Op()
+                    op.op_in = '(+) %s' % row['date']
+                    ops.append(op)
+            else:
+                out_price = row['close']
+                cur_benefit = out_price / in_price
+                if self.is_time_to_sell(row):
+                    benefit *= cur_benefit
+                    hold = False
+                    op = ops[-1]
+                    op.op_out = '(-) %s' % row['date']
+                    op.benefit = cur_benefit - 1
+                elif cur_benefit + self.stop_loss < 1.0:
+                    benefit *= cur_benefit
+                    hold = False
+                    op.op_out = '(-) %s' % row['date']
+                    op.benefit = cur_benefit - 1
+
+            self._set_inter_result(row)
+
+        return LoopbackResult(benefit - 1, ops)
+
+    @abstractmethod
+    def is_time_to_buy(self, row):
+        pass
+
+    @abstractmethod
+    def is_time_to_sell(self, row):
         pass
 
     def plot_benefit(self, title, stocks):
@@ -169,37 +236,11 @@ class LoopbackRSI(Loopback):
         super(LoopbackRSI, self).process_stock(stock)
         stock.add_rsi(self.rsi_period)
 
-    def loopback_one(self, stock):
-        df = stock.df
-        row_from = df.loc[df['date'] == self.from_date].index[0]
-        if self.to_date:
-            row_to = df.loc[df['date'] == self.to_date].index[0]
-        else:
-            row_to = df.shape[0]
-        df = df[row_from:row_to]
-        hold = False
-        benefit = 1.0
-        ops = []
-        in_price = 0.0
-        for _, row in df.iterrows():
-            if not hold:
-                if row['RSI'] <= self.rsi_buy:
-                    in_price = row['close']
-                    hold = True
-                    ops.append("(+)" + row['date'])
-            else:
-                out_price = row['close']
-                cur_benefit = out_price / in_price
-                if row['RSI'] >= self.rsi_sell:
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(-)" + row['date'])
-                elif cur_benefit + self.stop_loss < 1.0:
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(!-)" + row['date'])
+    def is_time_to_buy(self, row):
+        return row['RSI'] <= self.rsi_buy
 
-        return LoopbackResult(benefit - 1, ops)
+    def is_time_to_sell(self, row):
+        return row['RSI'] >= self.rsi_sell
 
     def print_loopback_condition(self):
         log.info('Loopback condition: rsi_period=%d, rsi_buy=%d, rsi_sell=%d, stop_loss=%f',
@@ -225,40 +266,17 @@ class LoopbackMACD(Loopback):
     def __init__(self, persist_f, from_date, to_date, stop_loss):
         super(LoopbackMACD, self).__init__(persist_f, from_date, to_date, stop_loss)
 
-    def loopback_one(self, stock):
-        df = stock.df
-        row_from = df.loc[df['date'] == self.from_date].index[0]
-        if self.to_date:
-            row_to = df.loc[df['date'] == self.to_date].index[0]
-        else:
-            row_to = df.shape[0]
-        df = df[row_from:row_to]
-        macd_last = 1.0
-        hold = False
-        benefit = 1.0
-        ops = []
-        in_price = 0.0
-        for _, row in df.iterrows():
-            if not hold:
-                if macd_last < 0.0 < row['MACD']:
-                    in_price = row['close']
-                    hold = True
-                    ops.append("(+) %s %f" % (row['date'], row['MACD']))
-            else:
-                out_price = row['close']
-                cur_benefit = out_price / in_price
-                if row['MACD'] < 0.0 <= macd_last:
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(-)%s %f %f%%" % (row['date'], row['MACD'], (cur_benefit - 1) * 100))
-                elif cur_benefit + self.stop_loss < 1.0:
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(-)%s %f %f%%" % (row['date'], row['MACD'], (cur_benefit - 1) * 100))
+    def is_time_to_buy(self, row):
+        return self.inter_result.last_macd < 0.0 < row['MACD']
 
-            macd_last = row['MACD']
+    def is_time_to_sell(self, row):
+        return row['MACD'] < 0.0 <= self.inter_result.last_macd
 
-        return LoopbackResult(benefit - 1, ops)
+    def _init_inter_result(self):
+        self.inter_result.last_macd = 1.0
+
+    def _set_inter_result(self, row):
+        self.inter_result.last_macd = row['MACD']
 
     def print_loopback_condition(self):
         log.info('Loopback condition: MACD')
@@ -271,41 +289,23 @@ class LoopbackMACD(Loopback):
                 stock.print_loopback_result()
 
 
-class LoopbackMACD_RSI(LoopbackRSI):
-    def loopback_one(self, stock):
-        df = stock.df
-        row_from = df.loc[df['date'] == self.from_date].index[0]
-        if self.to_date:
-            row_to = df.loc[df['date'] == self.to_date].index[0]
-        else:
-            row_to = df.shape[0]
-        df = df[row_from:row_to]
-        macd_last = 1.0
-        hold = False
-        benefit = 1.0
-        ops = []
-        in_price = 0.0
-        for _, row in df.iterrows():
-            if not hold:
-                if (row['RSI'] <= self.rsi_buy) and (macd_last < 0.0 < row['MACD']):
-                    in_price = row['close']
-                    hold = True
-                    ops.append("(+)" + row['date'])
-            else:
-                out_price = row['close']
-                cur_benefit = out_price / in_price
-                if (row['RSI'] >= self.rsi_sell) or (row['MACD'] < 0.0 <= macd_last):
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(-)" + row['date'])
-                elif cur_benefit + self.stop_loss < 1.0:
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(!-)" + row['date'])
+class LoopbackMACD_RSI(LoopbackMACD, LoopbackRSI):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, rsi_period, rsi_buy, rsi_sell):
+        LoopbackRSI.__init__(self, persist_f, from_date, to_date, stop_loss, rsi_period, rsi_buy, rsi_sell)
 
-            macd_last = row['MACD']
+    def is_time_to_buy(self, row):
+        return LoopbackMACD.is_time_to_buy(self, row) and LoopbackRSI.is_time_to_buy(self, row)
 
-        return LoopbackResult(benefit - 1, ops)
+    def is_time_to_sell(self, row):
+        return LoopbackMACD.is_time_to_sell(self, row) and LoopbackRSI.is_time_to_sell(self, row)
+
+    def _init_inter_result(self):
+        LoopbackMACD._init_inter_result(self)
+        LoopbackRSI._init_inter_result(self)
+
+    def _set_inter_result(self, row):
+        LoopbackMACD._set_inter_result(self, row)
+        LoopbackRSI._set_inter_result(self, row)
 
     def print_loopback_condition(self):
         log.info('RSI-MACD Loopback condition: rsi_period=%d, rsi_buy=%d, rsi_sell=%d, stop_loss=%f',
@@ -321,40 +321,8 @@ class LoopbackMACD_RSI(LoopbackRSI):
 
 
 class LoopbackMACD_MA(LoopbackMACD):
-    def loopback_one(self, stock):
-        df = stock.df
-        row_from = df.loc[df['date'] == self.from_date].index[0]
-        if self.to_date:
-            row_to = df.loc[df['date'] == self.to_date].index[0]
-        else:
-            row_to = df.shape[0]
-        df = df[row_from:row_to]
-        macd_last = 1.0
-        hold = False
-        benefit = 1.0
-        ops = []
-        in_price = 0.0
-        for _, row in df.iterrows():
-            if not hold:
-                if (row['MA'] >= row['close']) and (macd_last < 0.0 < row['MACD']):
-                    in_price = row['close']
-                    hold = True
-                    ops.append("(+)" + row['date'])
-            else:
-                out_price = row['close']
-                cur_benefit = out_price / in_price
-                if row['MACD'] < 0.0 <= macd_last:
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(-)" + row['date'])
-                elif cur_benefit + self.stop_loss < 1.0:
-                    benefit *= cur_benefit
-                    hold = False
-                    ops.append("(!-)" + row['date'])
-
-            macd_last = row['MACD']
-
-        return LoopbackResult(benefit - 1, ops)
+    def is_time_to_buy(self, row):
+        return (row['MA'] <= row['close']) and LoopbackMACD.is_time_to_buy(self, row)
 
     def print_loopback_condition(self):
         log.info('MACD-MA Loopback condition')

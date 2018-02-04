@@ -48,7 +48,7 @@ def is_in_sz50():
     return _aux
 
 
-def test_one_stock_rsi(code, from_date, to_date, rsi_period, rsi_buy, rsi_sell, stop_loss):
+def test_one_rsi(code, from_date, to_date, rsi_period, rsi_buy, rsi_sell, stop_loss):
     loopback = LoopbackRSI(None, from_date, to_date, stop_loss, rsi_period, rsi_buy, rsi_sell)
     loopback.test_loopback_one_by_code(code)
 
@@ -59,9 +59,8 @@ def loopback_rsi(persist_f, from_date, to_date, rsi_period, rsi_buy, rsi_sell, s
     loopback.best_stocks(is_in_hs300())
 
 
-
-def test_one_stock_macd(code, from_date, to_date):
-    loopback = LoopbackMACD(None, from_date, to_date)
+def test_one_stock_macd(code, from_date, to_date, stop_loss):
+    loopback = LoopbackMACD(None, from_date, to_date, stop_loss)
     loopback.test_loopback_one_by_code(code)
 
 
@@ -88,6 +87,10 @@ def loopback_macd(persist_f, from_date, to_date, stop_loss):
 
     loopback.plot_benefit("Math expt : %f" % math_expt, stocks)
 
+
+def test_one_stock_macd_ma(code, from_date, to_date, stop_loss):
+    loopback = LoopbackMACD_MA(None, from_date, to_date, stop_loss)
+    loopback.test_loopback_one_by_code(code)
 
 def loopback_macd_ma(persist_f, from_date, to_date, stop_loss):
     loopback = LoopbackMACD_MA(persist_f, from_date, to_date, stop_loss)
@@ -138,10 +141,12 @@ def loopback_macd_rsi(persist_f, from_date, to_date, rsi_period, rsi_buy, rsi_se
 
 
 if __name__ == '__main__':
-    # test_one_stock('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
     # loopback_rsi(None, '2017-05-09', None, 6, 30.0, 70.0, 0.1)
-    loopback_macd(None, '2017-10-10', None, 0.01)
-    # loopback_macd_ma(None, '2017-01-10', '2017-09-14', 0.1)
-    # test_one_stock_macd('600600', '2017-09-01')
-    # test_one_stock_macd_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
+    # loopback_macd(None, '2017-10-10', None, 0.01)
     # loopback_macd_rsi(None, '2017-05-09', '2017-09-01', 6, 30.0, 70.0, 0.1)
+    # loopback_macd_ma(None, '2017-01-10', None, 0.05)
+
+    # test_one_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
+    # test_one_stock_macd('600600', '2017-09-01', None, 0.1)
+    # test_one_stock_macd_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
+    test_one_stock_macd_ma('000998', '2017-01-10', None, 0.1)

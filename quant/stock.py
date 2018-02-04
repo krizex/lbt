@@ -41,15 +41,8 @@ class Stock(object):
 
     def print_loopback_result(self):
         log.info('%s %s %f%%' % (self.code, self.info['name'].decode('utf8'), self.loopback_result.benefit * 100))
-        out = []
         for op in self.loopback_result.ops:
-            out.append(op)
-            if len(out) == 2:
-                log.info('%s', ' '.join(out))
-                out = []
-
-        if out:
-            log.info('%s', ' '.join(out))
+            log.info('%s %s %f%%', op.op_in, op.op_out, op.benefit * 100)
 
     def is_time_to_buy_by_rsi(self, rsi_in):
         today = self.df.shape[0] - 1
