@@ -131,7 +131,6 @@ class Loopback(object):
         hold = False
         benefit = 1.0
         in_price = 0.0
-        out_price = 0.0
         last_price = 0.0
         ops = []
         self._init_inter_result()
