@@ -19,4 +19,5 @@ signalperiod = 9    # DEA线平滑天数
 def add_macd(df):
     close = np.array([float(x) for x in df['close']])
     diff, dea, macd = talib.MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)
+    df['DIFF'] = diff
     df['MACD'] = macd

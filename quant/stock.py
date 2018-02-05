@@ -51,7 +51,7 @@ class Stock(object):
     def is_time_to_buy_by_macd(self):
         yesterday = self.df.shape[0] - 2
         today = self.df.shape[0] - 1
-        return self.df.loc[yesterday]['MACD'] < 0 < self.df.loc[today]['MACD']
+        return self.df.loc[yesterday]['MACD'] < 0 < self.df.loc[today]['MACD'] and self.df.loc[today]['DIFF'] > 0.0
 
     def is_time_to_buy_by_ma(self):
         today = self.df.shape[0] - 1

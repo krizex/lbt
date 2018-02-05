@@ -51,7 +51,6 @@ class Loopback(object):
         self.stocks = self.fetch_stocks()
 
     def process_stock(self, stock):
-        stock.add_ma(20)
         stock.add_macd()
 
     def persiste_f_name(self, name):
@@ -82,7 +81,10 @@ class Loopback(object):
         log.info('Fetched all stocks')
 
         for stock in stocks:
-            self.process_stock(stock)
+            try:
+                self.process_stock(stock)
+            except:
+                log.error('Error occur when processing %s', stock.code)
 
         return stocks
 
@@ -106,7 +108,7 @@ class Loopback(object):
                 ret = self.loopback_one(stock)
                 stock.set_loopback_result(ret)
             except Exception as e:
-                pass
+                log.error('Error occur when loopback %s', stock.code)
 
     def _loop_range(self, df):
         row_from = df.loc[df['date'] == self.from_date].index[0]
@@ -129,9 +131,12 @@ class Loopback(object):
         hold = False
         benefit = 1.0
         in_price = 0.0
+        out_price = 0.0
+        last_price = 0.0
         ops = []
         self._init_inter_result()
         for _, row in df.iterrows():
+            last_price = row['close']
             if not hold:
                 if self.is_time_to_buy(row):
                     hold = True
@@ -156,6 +161,12 @@ class Loopback(object):
 
             self._set_inter_result(row)
 
+        # assume sell the stock in the last day
+        if ops and ops[-1].op_out == '':
+            cur_benefit = last_price / in_price
+            ops[-1].benefit = cur_benefit - 1
+            benefit *= cur_benefit
+
         return LoopbackResult(benefit - 1, ops)
 
     @abstractmethod
@@ -177,7 +188,7 @@ class Loopback(object):
         x = [stock.get_benefit() for stock in self.stocks]
         plt.hist(x)
         plt.xlabel('benefit')
-        plt.xlim(-3.0,3.0)
+        plt.xlim(-3.0, 3.0)
         plt.ylabel('Frequency')
         plt.title('Benefit hist')
         plt.show()
@@ -267,10 +278,10 @@ class LoopbackMACD(Loopback):
         super(LoopbackMACD, self).__init__(persist_f, from_date, to_date, stop_loss)
 
     def is_time_to_buy(self, row):
-        return self.inter_result.last_macd < 0.0 < row['MACD']
+        return (self.inter_result.last_macd < 0.0 < row['MACD'])
 
     def is_time_to_sell(self, row):
-        return row['MACD'] < 0.0 <= self.inter_result.last_macd
+        return row['MACD'] < 0.0
 
     def _init_inter_result(self):
         self.inter_result.last_macd = 1.0
@@ -322,7 +333,7 @@ class LoopbackMACD_RSI(LoopbackMACD, LoopbackRSI):
 
 class LoopbackMACD_MA(LoopbackMACD):
     def is_time_to_buy(self, row):
-        return (row['MA'] <= row['close']) and LoopbackMACD.is_time_to_buy(self, row)
+        return (row['ma20'] <= row['close']) and LoopbackMACD.is_time_to_buy(self, row)
 
     def print_loopback_condition(self):
         log.info('MACD-MA Loopback condition')

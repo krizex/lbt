@@ -47,6 +47,35 @@ def is_in_sz50():
 
     return _aux
 
+def is_in_zz500():
+    codes = get_codes(ts.get_zz500s())
+
+    def _aux(stock):
+        return stock.code in codes
+
+    return _aux
+
+
+def loop_verify(loopback, from_date):
+    log.info('loop verify')
+    loopback.from_date = from_date
+    loopback.to_date = None
+    stocks = []
+    total_benefit = 0.0
+    for stock in loopback.stocks:
+        try:
+            if stock.get_benefit() <= 0.0:
+                break
+
+            loopback.test_loopback_one(stock)
+            stocks.append(stock)
+            total_benefit += stock.get_benefit()
+        except Exception as e:
+            pass
+
+    math_expt = total_benefit / len(stocks)
+
+    loopback.plot_benefit("Math expt : %f" % math_expt, stocks)
 
 def test_one_rsi(code, from_date, to_date, rsi_period, rsi_buy, rsi_sell, stop_loss):
     loopback = LoopbackRSI(None, from_date, to_date, stop_loss, rsi_period, rsi_buy, rsi_sell)
@@ -67,25 +96,9 @@ def test_one_stock_macd(code, from_date, to_date, stop_loss):
 def loopback_macd(persist_f, from_date, to_date, stop_loss):
     loopback = LoopbackMACD(persist_f, from_date, to_date, stop_loss)
     loopback.init()
-    loopback.best_stocks(is_in_sz50())
+    loopback.best_stocks(is_in_hs300())
 
-    # loop 2
-    log.info('loop 2')
-    loopback.from_date = to_date
-    loopback.to_date = None
-    stocks = []
-    total_benefit = 0.0
-    for stock in loopback.stocks:
-        try:
-            loopback.test_loopback_one(stock)
-            stocks.append(stock)
-            total_benefit += stock.get_benefit()
-        except Exception as e:
-            pass
-
-    math_expt = total_benefit / len(stocks)
-
-    loopback.plot_benefit("Math expt : %f" % math_expt, stocks)
+    loop_verify(loopback, to_date)
 
 
 def test_one_stock_macd_ma(code, from_date, to_date, stop_loss):
@@ -97,23 +110,7 @@ def loopback_macd_ma(persist_f, from_date, to_date, stop_loss):
     loopback.init()
     loopback.best_stocks(is_in_sz50())
 
-    # loop 2
-    log.info('loop 2')
-    loopback.from_date = to_date
-    loopback.to_date = None
-    stocks = []
-    total_benefit = 0.0
-    for stock in loopback.stocks:
-        try:
-            loopback.test_loopback_one(stock)
-            stocks.append(stock)
-            total_benefit += stock.get_benefit()
-        except Exception as e:
-            pass
-
-    math_expt = total_benefit / len(stocks)
-
-    loopback.plot_benefit("Math expt : %f" % math_expt, stocks)
+    loop_verify(loopback, to_date)
 
 
 def test_one_stock_macd_rsi(code, from_date, to_date, rsi_period, rsi_buy, rsi_sell, stop_loss):
@@ -126,27 +123,20 @@ def loopback_macd_rsi(persist_f, from_date, to_date, rsi_period, rsi_buy, rsi_se
     loopback.init()
     loopback.best_stocks(not_startup)
 
-    # loop 2
-    log.info('loop 2')
-    loopback.from_date = to_date
-    loopback.to_date = None
-    stocks = []
-    for stock in loopback.stocks:
-        try:
-            loopback.test_loopback_one(stock)
-            stocks.append(stock)
-        except Exception as e:
-            pass
-    loopback.plot_benefit("loop2", stocks)
+    loop_verify(loopback, to_date)
 
 
 if __name__ == '__main__':
+    d_2016 = '2016-03-03'
+    d_2017 = '2017-03-03'
+    d_2017_n = '2017-09-01'
     # loopback_rsi(None, '2017-05-09', None, 6, 30.0, 70.0, 0.1)
-    # loopback_macd(None, '2017-10-10', None, 0.01)
+    loopback_macd(None, d_2017_n, None, 0.05)
     # loopback_macd_rsi(None, '2017-05-09', '2017-09-01', 6, 30.0, 70.0, 0.1)
-    # loopback_macd_ma(None, '2017-01-10', None, 0.05)
+    # loopback_macd_ma(None, d_2017, None, 0.05)
+
 
     # test_one_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
     # test_one_stock_macd('600600', '2017-09-01', None, 0.1)
     # test_one_stock_macd_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
-    test_one_stock_macd_ma('000998', '2017-01-10', None, 0.1)
+    # test_one_stock_macd_ma('600519', '2017-01-10', None, 0.05)
