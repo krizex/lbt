@@ -156,7 +156,7 @@ class Loopback(object):
                     op = ops[-1]
                     op.op_out = '(-) %s' % row['date']
                     op.benefit = cur_benefit - 1
-                elif cur_benefit + self.stop_loss < 1.0:
+                elif cur_benefit < 1.0 + self.stop_loss:
                     benefit *= cur_benefit
                     hold = False
                     op.op_out = '(-V) %s' % row['date']
@@ -343,13 +343,26 @@ class LoopbackMACD_RSI(LoopbackMACD, LoopbackRSI):
 
 class LoopbackMACD_MA(LoopbackMACD):
     def is_time_to_buy(self, row):
-        return all([
+        if all([
             is_rising_trend(row),
-            LoopbackMACD.is_time_to_buy(self, row)
-        ])
+            row['close'] > row['MA60'],
+            LoopbackMACD.is_time_to_buy(self, row),
+        ]):
+            self.macd_red = False
+            return True
+
+        return False
 
     def is_time_to_sell(self, row):
+        if not self.macd_red and row['MACD'] > 0:
+            self.macd_red = True
+            return False
+
+        if self.macd_red and row['MACD'] < 0:
+            return True
+
         return False
+
 
     def print_loopback_condition(self):
         log.info('MACD-MA Loopback condition')

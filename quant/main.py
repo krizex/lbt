@@ -148,22 +148,22 @@ if __name__ == '__main__':
     d_2016 = '2016-03-03'
     d_2017 = '2017-03-03'
     d_2017_n = '2017-09-01'
-    # loopback_rsi(None, '2017-05-09', None, 6, 30.0, 70.0, 0.1)
-    # loopback_macd(None, d_2017, None, 0.05)
-    # loopback_macd_rsi(None, '2017-05-09', '2017-09-01', 6, 30.0, 70.0, 0.1)
+    # loopback_rsi(None, '2017-05-09', None, 6, 30.0, 70.0, -0.1)
+    # loopback_macd(None, d_2017, None, -0.05)
+    # loopback_macd_rsi(None, '2017-05-09', '2017-09-01', 6, 30.0, 70.0, -0.1)
 
     # rising trend &&  macd up
-    loopback_macd_ma(None, d_2017, None, 0.05, 0.1)
+    loopback_macd_ma(None, d_2017, None, -0.05, None)
 
     # rising trend and ma break 60 avg
-    # loopback_ma(None, d_2017, None, 0.05, 0.1, 60)
+    # loopback_ma(None, d_2017, None, -0.05, 0.1, 60)
 
     # rising trend and ma break 180 avg
-    # loopback_ma(None, d_2017, None, 0.05, 0.1, 180)
+    # loopback_ma(None, d_2017, None, -0.05, 0.1, 180)
 
 
-    # test_one_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
-    # test_one_stock_macd('600600', '2017-09-01', None, 0.1)
-    # test_one_stock_macd_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
-    # test_one_stock_macd_ma('600519', '2017-01-10', None, 0.05)
-    # test_one_stock_ma('600600', '2017-09-01', None, 0.1)
+    # test_one_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, -0.1)
+    # test_one_stock_macd('600600', '2017-09-01', None, -0.1)
+    # test_one_stock_macd_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, -0.1)
+    # test_one_stock_macd_ma('600519', '2017-01-10', None, -0.05)
+    # test_one_stock_ma('600600', '2017-09-01', None, -0.1)
