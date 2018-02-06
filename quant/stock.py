@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from quant.helpers import is_rising_trend
 from quant.index.ma import add_ma
 from quant.index.rsi import add_rsi
 from quant.index.macd import add_macd
@@ -20,7 +21,7 @@ class Stock(object):
     def __init__(self, code, info):
         self.code = code
         self.info = info
-        self.df = ts.get_k_data(code)
+        self.df = ts.get_k_data(code, retry_count=10)
         self.loopback_result = None
 
     @property
@@ -33,8 +34,8 @@ class Stock(object):
     def add_macd(self):
         add_macd(self.df)
 
-    def add_ma(self, period):
-        add_ma(self.df, period)
+    def add_ma(self):
+        add_ma(self.df)
 
     def set_loopback_result(self, result):
         self.loopback_result = result
@@ -53,9 +54,19 @@ class Stock(object):
         today = self.df.shape[0] - 1
         return self.df.loc[yesterday]['MACD'] < 0 < self.df.loc[today]['MACD'] and self.df.loc[today]['DIFF'] > 0.0
 
-    def is_time_to_buy_by_ma(self):
+    def is_rising_trend_now(self):
         today = self.df.shape[0] - 1
-        return self.df.loc[today]['close'] <= self.df.loc[today]['MA']
+        row = self.df.loc[today]
+        return is_rising_trend(row)
+
+    def is_time_to_buy_by_ma(self, ma):
+        yesterday = self.df.shape[0] - 2
+        today = self.df.shape[0] - 1
+
+        def gap(day):
+            return self.df.loc[day]['close'] - self.df.loc[day][ma]
+
+        return gap(yesterday) <= 0.0 < gap(today)
 
     def get_benefit(self):
         return self.loopback_result.benefit

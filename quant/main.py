@@ -3,7 +3,7 @@
 import tushare as ts
 
 from quant.logger.logger import log
-from quant.loopback import LoopbackRSI, LoopbackMACD, LoopbackMACD_RSI, LoopbackMACD_MA
+from quant.loopback import LoopbackRSI, LoopbackMACD, LoopbackMACD_RSI, LoopbackMACD_MA, LoopbackMA
 
 __author__ = 'Yang Qian'
 
@@ -105,10 +105,13 @@ def test_one_stock_macd_ma(code, from_date, to_date, stop_loss):
     loopback = LoopbackMACD_MA(None, from_date, to_date, stop_loss)
     loopback.test_loopback_one_by_code(code)
 
-def loopback_macd_ma(persist_f, from_date, to_date, stop_loss):
-    loopback = LoopbackMACD_MA(persist_f, from_date, to_date, stop_loss)
+
+def loopback_macd_ma(persist_f, from_date, to_date, stop_loss, stop_benefit):
+    """Rising trend && macd going up
+    """
+    loopback = LoopbackMACD_MA(persist_f, from_date, to_date, stop_loss, stop_benefit)
     loopback.init()
-    loopback.best_stocks(is_in_sz50())
+    loopback.best_stocks(is_in_hs300())
 
     loop_verify(loopback, to_date)
 
@@ -126,17 +129,41 @@ def loopback_macd_rsi(persist_f, from_date, to_date, rsi_period, rsi_buy, rsi_se
     loop_verify(loopback, to_date)
 
 
+def test_one_stock_ma(code, from_date, to_date, stop_loss, stop_benefit):
+    loopback = LoopbackMA(None, from_date, to_date, stop_loss, stop_benefit, 60)
+    loopback.test_loopback_one_by_code(code)
+
+
+def loopback_ma(persist_f, from_date, to_date, stop_loss, stop_benefit, ma_preiod):
+    """ rising trend and ma break ma_preiod
+    """
+    loopback = LoopbackMA(persist_f, from_date, to_date, stop_loss, stop_benefit, ma_preiod)
+    loopback.init()
+    loopback.best_stocks(is_in_hs300())
+
+    loop_verify(loopback, to_date)
+
+
 if __name__ == '__main__':
     d_2016 = '2016-03-03'
     d_2017 = '2017-03-03'
     d_2017_n = '2017-09-01'
     # loopback_rsi(None, '2017-05-09', None, 6, 30.0, 70.0, 0.1)
-    loopback_macd(None, d_2017_n, None, 0.05)
+    # loopback_macd(None, d_2017, None, 0.05)
     # loopback_macd_rsi(None, '2017-05-09', '2017-09-01', 6, 30.0, 70.0, 0.1)
-    # loopback_macd_ma(None, d_2017, None, 0.05)
+
+    # rising trend &&  macd up
+    loopback_macd_ma(None, d_2017, None, 0.05, 0.1)
+
+    # rising trend and ma break 60 avg
+    # loopback_ma(None, d_2017, None, 0.05, 0.1, 60)
+
+    # rising trend and ma break 180 avg
+    # loopback_ma(None, d_2017, None, 0.05, 0.1, 180)
 
 
     # test_one_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
     # test_one_stock_macd('600600', '2017-09-01', None, 0.1)
     # test_one_stock_macd_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, 0.1)
     # test_one_stock_macd_ma('600519', '2017-01-10', None, 0.05)
+    # test_one_stock_ma('600600', '2017-09-01', None, 0.1)

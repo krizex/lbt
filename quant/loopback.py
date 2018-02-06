@@ -5,6 +5,7 @@ import time
 from abc import abstractmethod, ABCMeta, abstractproperty
 import tushare as ts
 
+from quant.helpers import is_rising_trend
 from quant.logger.logger import log
 from quant.stock import Stock
 import cPickle as pickle
@@ -27,6 +28,7 @@ class LoopbackResult(object):
 class LoopInterResult(object):
     def __init__(self):
         self.last_macd = 0.0
+        self.last_ma_gap = 0.0
 
 
 class Op(object):
@@ -39,11 +41,12 @@ class Op(object):
 class Loopback(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, persist_f, from_date, to_date, stop_loss):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit):
         self.persist_f = self.persiste_f_name(persist_f)
         self.from_date = from_date
         self.to_date = to_date
         self.stop_loss = stop_loss
+        self.stop_benefit = stop_benefit
         self.stocks = None
         self.inter_result = LoopInterResult()
 
@@ -52,6 +55,7 @@ class Loopback(object):
 
     def process_stock(self, stock):
         stock.add_macd()
+        stock.add_ma()
 
     def persiste_f_name(self, name):
         if name:
@@ -155,8 +159,14 @@ class Loopback(object):
                 elif cur_benefit + self.stop_loss < 1.0:
                     benefit *= cur_benefit
                     hold = False
-                    op.op_out = '(-) %s' % row['date']
+                    op.op_out = '(-V) %s' % row['date']
                     op.benefit = cur_benefit - 1
+                elif self.stop_benefit:
+                    if cur_benefit - self.stop_benefit >= 1.0:
+                        benefit *= cur_benefit
+                        hold = False
+                        op.op_out = '(-^) %s' % row['date']
+                        op.benefit = cur_benefit - 1
 
             self._set_inter_result(row)
 
@@ -215,7 +225,8 @@ class Loopback(object):
         if filt:
             self.stocks = filter(filt, self.stocks)
         self.loopback()
-        self.stocks = filter(lambda x: x.loopback_result is not None, self.stocks)
+        # We only consider the stock we really purchased
+        self.stocks = filter(lambda x: x.loopback_result is not None and x.loopback_result.ops, self.stocks)
         self.stocks = sorted(self.stocks, key=lambda x: x.loopback_result.benefit, reverse=True)
         total_benefit = 0.0
         for stock in self.stocks:
@@ -273,11 +284,11 @@ class LoopbackRSI(Loopback):
 
 
 class LoopbackMACD(Loopback):
-    def __init__(self, persist_f, from_date, to_date, stop_loss):
-        super(LoopbackMACD, self).__init__(persist_f, from_date, to_date, stop_loss)
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit):
+        super(LoopbackMACD, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
 
     def is_time_to_buy(self, row):
-        return (self.inter_result.last_macd < 0.0 < row['MACD'])
+        return self.inter_result.last_macd <= 0.0 < row['MACD']
 
     def is_time_to_sell(self, row):
         return row['MACD'] < 0.0
@@ -332,7 +343,13 @@ class LoopbackMACD_RSI(LoopbackMACD, LoopbackRSI):
 
 class LoopbackMACD_MA(LoopbackMACD):
     def is_time_to_buy(self, row):
-        return (row['ma20'] <= row['close']) and LoopbackMACD.is_time_to_buy(self, row)
+        return all([
+            is_rising_trend(row),
+            LoopbackMACD.is_time_to_buy(self, row)
+        ])
+
+    def is_time_to_sell(self, row):
+        return False
 
     def print_loopback_condition(self):
         log.info('MACD-MA Loopback condition')
@@ -341,6 +358,38 @@ class LoopbackMACD_MA(LoopbackMACD):
         log.info("=====Your chance=====")
 
         for i, stock in enumerate(self.stocks):
-            if stock.is_time_to_buy_by_ma() and stock.is_time_to_buy_by_macd():
+            if stock.is_rising_trend_now() and stock.is_time_to_buy_by_macd():
+                log.info('%d:', i+1)
+                stock.print_loopback_result()
+
+
+class LoopbackMA(Loopback):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, ma_period):
+        super(LoopbackMA, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
+        self.ma = 'MA%d' % ma_period
+
+    def _init_inter_result(self):
+        self.inter_result.last_ma_gap = 1.0
+
+    def _set_inter_result(self, row):
+        self.inter_result.last_ma_gap = row['close'] - row[self.ma]
+
+    def is_time_to_buy(self, row):
+        cur_gap = row['close'] - row[self.ma]
+        return all([
+            self.inter_result.last_ma_gap <= 0.0 < cur_gap,
+            is_rising_trend(row)
+        ])
+
+    def is_time_to_sell(self, row):
+        return False
+
+    def print_loopback_condition(self):
+        log.info('Loopback condition: MA: %s', self.ma)
+
+    def where_is_my_chance(self):
+        log.info("=====Your chance=====")
+        for i, stock in enumerate(self.stocks):
+            if stock.is_time_to_buy_by_ma(self.ma):
                 log.info('%d:', i+1)
                 stock.print_loopback_result()
