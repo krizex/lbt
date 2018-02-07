@@ -7,6 +7,7 @@ import tushare as ts
 
 from quant.helpers import is_rising_trend
 from quant.logger.logger import log
+from quant.peak import Peak
 from quant.stock import Stock
 import cPickle as pickle
 import matplotlib.pyplot as plt
@@ -406,3 +407,29 @@ class LoopbackMA(Loopback):
             if stock.is_time_to_buy_by_ma(self.ma):
                 log.info('%d:', i+1)
                 stock.print_loopback_result()
+
+
+class LoopbackPeak(Loopback):
+    def print_loopback_condition(self):
+        log.info('Loopback condition: inverse')
+
+    def where_is_my_chance(self):
+        pass
+
+    def is_time_to_sell(self, row):
+        pass
+
+    def is_time_to_buy(self, row):
+        pass
+
+    def loopback_one(self, stock):
+        row_from, row_to = self._loop_range(stock.df)
+        peaker = Peak(stock.df[row_from:row_to])
+        inverse_points = peaker.find_bottom_inverse()
+        ops = []
+        for point in inverse_points:
+            op = Op()
+            op.op_in = '(+) %s' % point['date']
+            ops.append(op)
+
+        return LoopbackResult(0, ops)
