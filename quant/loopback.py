@@ -72,7 +72,7 @@ class Loopback(object):
             return pickle.load(f)
 
     def persist_stocks(self, data):
-        log.info("Persist stocks to file:%s", self.persist_f)
+        log.info("Persist stocks to file: %s", self.persist_f)
         with open(self.persist_f, 'w') as f:
             pickle.dump(data, f)
 
@@ -90,6 +90,8 @@ class Loopback(object):
                 self.process_stock(stock)
             except:
                 log.error('Error occur when processing %s', stock.code)
+
+        log.info('Processed all stocks')
 
         return stocks
 
@@ -113,7 +115,7 @@ class Loopback(object):
                 ret = self.loopback_one(stock)
                 stock.set_loopback_result(ret)
             except Exception as e:
-                log.error('Error occur when loopback %s', stock.code)
+                log.error('Error occur when looping back %s', stock.code)
 
     def _loop_range(self, df):
         row_from = df.loc[df['date'] == self.from_date].index[0]
@@ -342,7 +344,7 @@ class LoopbackMACD_RSI(LoopbackMACD, LoopbackRSI):
                 stock.print_loopback_result()
 
 
-class LoopbackMACD_MA(LoopbackMACD):
+class LoopbackMACDRisingTrend(LoopbackMACD):
     def is_time_to_buy(self, row):
         if all([
             is_rising_trend(row),
@@ -363,7 +365,6 @@ class LoopbackMACD_MA(LoopbackMACD):
             return True
 
         return False
-
 
     def print_loopback_condition(self):
         log.info('MACD-MA Loopback condition')
@@ -433,3 +434,56 @@ class LoopbackPeak(Loopback):
             ops.append(op)
 
         return LoopbackResult(0, ops)
+
+
+class LoopbackBreakResistence(Loopback):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
+        super(LoopbackBreakResistence, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
+        self.date_range = date_range
+        self.amplitude = amplitude
+        # internal result
+        self._past_data = []
+        self._is_data_in_amplitude = False
+        self._highest_price = 0.0
+
+    # do not need process
+    def process_stock(self, stock):
+        pass
+
+    def print_loopback_condition(self):
+        log.info('Loopback condition: break resistence in %d days while amplitude is %f%%', self.date_range, self.amplitude * 100)
+
+    def where_is_my_chance(self):
+        pass
+
+    def is_time_to_sell(self, row):
+        return False
+
+    def is_time_to_buy(self, row):
+        if self._is_data_in_amplitude:
+            return row['close'] > self._highest_price
+        else:
+            return False
+
+    def _calc_highest_price(self, data):
+        highests = [x['high'] for x in data]
+        return max(highests)
+
+    def _data_in_amplitude(self, data):
+        avgs = [(x['high'] + x['high']) / 2.0 for x in data]
+        avg = sum(avgs) / len(avgs)
+        avg_up, avg_down = avg * (1.0 + self.amplitude), avg * (1.0 - self.amplitude)
+        return all(map(lambda x: avg_down <= x <= avg_up, [x['high'] for x in data] + [x['low'] for x in data]))
+
+    def _set_inter_result(self, row):
+        if len(self._past_data) >= self.date_range:
+            self._past_data = self._past_data[1:]
+
+        self._past_data.append(row)
+
+        if len(self._past_data) >= self.date_range:
+            self._highest_price = self._calc_highest_price(self._past_data)
+            self._is_data_in_amplitude = self._data_in_amplitude(self._past_data)
+
+
+

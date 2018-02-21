@@ -3,7 +3,8 @@
 import tushare as ts
 
 from quant.logger.logger import log
-from quant.loopback import LoopbackRSI, LoopbackMACD, LoopbackMACD_RSI, LoopbackMACD_MA, LoopbackMA, LoopbackPeak
+from quant.loopback import LoopbackRSI, LoopbackMACD, LoopbackMACD_RSI, LoopbackMACDRisingTrend, LoopbackMA, LoopbackPeak, \
+    LoopbackBreakResistence
 
 __author__ = 'Yang Qian'
 
@@ -101,15 +102,15 @@ def loopback_macd(persist_f, from_date, to_date, stop_loss):
     loop_verify(loopback, to_date)
 
 
-def test_one_stock_macd_ma(code, from_date, to_date, stop_loss):
-    loopback = LoopbackMACD_MA(None, from_date, to_date, stop_loss)
+def test_one_stock_macd_rising_trend(code, from_date, to_date, stop_loss):
+    loopback = LoopbackMACDRisingTrend(None, from_date, to_date, stop_loss)
     loopback.test_loopback_one_by_code(code)
 
 
-def loopback_macd_ma(persist_f, from_date, to_date, stop_loss, stop_benefit):
+def loopback_macd_rising_trend(persist_f, from_date, to_date, stop_loss, stop_benefit):
     """Rising trend && macd going up
     """
-    loopback = LoopbackMACD_MA(persist_f, from_date, to_date, stop_loss, stop_benefit)
+    loopback = LoopbackMACDRisingTrend(persist_f, from_date, to_date, stop_loss, stop_benefit)
     loopback.init()
     loopback.best_stocks(is_in_hs300())
 
@@ -158,7 +159,17 @@ def loopback_inverse(persist_f, from_date, to_date, stop_loss, stop_benefit):
 
     # loop_verify(loopback, to_date)
 
+def loopback_break_resistence(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
+    loopback = LoopbackBreakResistence(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude)
+    loopback.init()
+    loopback.best_stocks(is_in_hs300())
+
+def test_one_stock_break_resistence(code, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
+    loopback = LoopbackBreakResistence(None, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude)
+    loopback.test_loopback_one_by_code(code)
+
 if __name__ == '__main__':
+    d_2015 = '2015-08-14'
     d_2016 = '2016-03-03'
     d_2017 = '2017-03-03'
     d_2017_n = '2017-09-01'
@@ -167,20 +178,25 @@ if __name__ == '__main__':
     # loopback_macd_rsi(None, '2017-05-09', '2017-09-01', 6, 30.0, 70.0, -0.1)
 
     # rising trend &&  macd up
-    # loopback_macd_ma(None, d_2017, None, -0.05, None)
+    # loopback_macd_rising_trend(None, d_2017, None, -0.05, None)
 
     # rising trend and ma break 60 avg
-    # loopback_ma(None, d_2017, None, -0.05, 0.1, 60)
+    # loopback_ma(None, d_2017, None, -0.05, 0.3, 60)
 
     # rising trend and ma break 180 avg
-    # loopback_ma(None, d_2017, None, -0.05, 0.1, 180)
+    # loopback_ma(None, d_2015, None, -0.05, 0.3, 180)
 
-    loopback_inverse(None, d_2017, None, -0.05, 0.1)
+    # find inverse peak
+    # loopback_inverse(None, d_2017, None, -0.05, 0.1)
+
+    # find break resistence
+    loopback_break_resistence(None, d_2017, None, -0.03, 0.1, 30, 0.03)
 
     # test_one_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, -0.1)
     # test_one_stock_macd('600600', '2017-09-01', None, -0.1)
     # test_one_stock_macd_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, -0.1)
     # test_one_stock_macd_ma('600519', '2017-01-10', None, -0.05)
     # test_one_stock_ma('600600', '2017-09-01', None, -0.1)
-
     # test_one_stock_inverse('600600', d_2017, None, -0.1, 0.1)
+
+    # test_one_stock_break_resistence('600600', d_2017, None, -0.03, 0.1, 30, 0.01)
