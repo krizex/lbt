@@ -4,7 +4,7 @@ import tushare as ts
 
 from quant.logger.logger import log
 from quant.loopback import LoopbackRSI, LoopbackMACD, LoopbackMACD_RSI, LoopbackMACDRisingTrend, LoopbackMA, LoopbackPeak, \
-    LoopbackBreakResistence
+    LoopbackBreakresistance
 
 __author__ = 'Yang Qian'
 
@@ -159,13 +159,13 @@ def loopback_inverse(persist_f, from_date, to_date, stop_loss, stop_benefit):
 
     # loop_verify(loopback, to_date)
 
-def loopback_break_resistence(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
-    loopback = LoopbackBreakResistence(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude)
+def loopback_break_resistance(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
+    loopback = LoopbackBreakresistance(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude)
     loopback.init()
     loopback.best_stocks(is_in_hs300())
 
-def test_one_stock_break_resistence(code, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
-    loopback = LoopbackBreakResistence(None, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude)
+def test_one_stock_break_resistance(code, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
+    loopback = LoopbackBreakresistance(None, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude)
     loopback.test_loopback_one_by_code(code)
 
 if __name__ == '__main__':
@@ -189,8 +189,8 @@ if __name__ == '__main__':
     # find inverse peak
     # loopback_inverse(None, d_2017, None, -0.05, 0.1)
 
-    # find break resistence
-    loopback_break_resistence(None, d_2017, None, -0.03, 0.1, 30, 0.03)
+    # find break resistance
+    loopback_break_resistance(None, d_2017, None, -0.02, 0.3, 30, 0.05)
 
     # test_one_rsi('600600', '2017-05-09', None, 6, 20.0, 70.0, -0.1)
     # test_one_stock_macd('600600', '2017-09-01', None, -0.1)
@@ -199,4 +199,4 @@ if __name__ == '__main__':
     # test_one_stock_ma('600600', '2017-09-01', None, -0.1)
     # test_one_stock_inverse('600600', d_2017, None, -0.1, 0.1)
 
-    # test_one_stock_break_resistence('600600', d_2017, None, -0.03, 0.1, 30, 0.01)
+    # test_one_stock_break_resistance('600600', d_2017, None, -0.03, 0.1, 30, 0.1)

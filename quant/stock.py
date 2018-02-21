@@ -68,6 +68,18 @@ class Stock(object):
 
         return gap(yesterday) <= 0.0 < gap(today)
 
+    def is_time_to_buy_by_break_resistance(self, date_range, amplitude):
+        from quant.loopback import LoopbackBreakresistance
+        today = self.df.shape[0] - 1
+        start = today - date_range
+        df = self.df[start:today]
+        data = [row for _, row in df.iterrows()]
+        if self.df.loc[today]['close'] > LoopbackBreakresistance.calc_highest_price(data) and \
+                LoopbackBreakresistance.data_in_amplitude(data, amplitude):
+            return True
+
+        return False
+
     def get_benefit(self):
         return self.loopback_result.benefit
 
