@@ -42,8 +42,16 @@ class Stock(object):
 
     def print_loopback_result(self):
         log.info('%s %s %f%%' % (self.code, self.info['name'].decode('utf8'), self.loopback_result.benefit * 100))
+        if self.loopback_result.hold_days:
+            log.info('hold %d days', self.loopback_result.hold_days)
         for op in self.loopback_result.ops:
             log.info('%s %s %f%%', op.op_in, op.op_out, op.benefit * 100)
+
+    def get_last_op(self):
+        if not self.loopback_result:
+            return None
+
+        return self.loopback_result.ops[-1]
 
     def is_time_to_buy_by_rsi(self, rsi_in):
         today = self.df.shape[0] - 1

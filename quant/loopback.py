@@ -3,6 +3,8 @@
 import os
 import time
 from abc import abstractmethod, ABCMeta, abstractproperty
+from datetime import datetime
+
 import tushare as ts
 
 from quant.helpers import is_rising_trend
@@ -20,10 +22,12 @@ Created on 01/31/2018
 
 """
 
+
 class LoopbackResult(object):
-    def __init__(self, benefit, ops):
+    def __init__(self, benefit, ops, hold_days=0):
         self.benefit = benefit
         self.ops = ops
+        self.hold_days = hold_days
 
 
 class LoopInterResult(object):
@@ -37,6 +41,7 @@ class Op(object):
         self.op_in = ''
         self.op_out = ''
         self.benefit = 0.0
+        self.slope = 0.0
 
 
 class Loopback(object):
@@ -55,6 +60,9 @@ class Loopback(object):
         self.stocks = self.fetch_stocks()
 
     def process_stock(self, stock):
+        if len(stock.df) == 0:
+            return
+
         stock.add_macd()
         stock.add_ma()
 
@@ -207,7 +215,10 @@ class Loopback(object):
 
     def test_loopback_one_by_code(self, code):
         df = ts.get_stock_basics()
-        info = df.loc[code]
+        try:
+            info = df.loc[code]
+        except Exception:
+            info = {'name': 'unknown'}
         stock = Stock(code, info)
         self.test_loopback_one(stock)
 
@@ -348,7 +359,7 @@ class LoopbackMACDRisingTrend(LoopbackMACD):
     def is_time_to_buy(self, row):
         if all([
             is_rising_trend(row),
-            row['close'] > row['MA60'],
+            row['close'] > row['MA20'],
             LoopbackMACD.is_time_to_buy(self, row),
         ]):
             self.macd_red = False
@@ -411,11 +422,30 @@ class LoopbackMA(Loopback):
 
 
 class LoopbackPeak(Loopback):
+    def plot_benefit(self, title, stocks):
+        pass
+
     def print_loopback_condition(self):
         log.info('Loopback condition: inverse')
 
     def where_is_my_chance(self):
-        pass
+        log.info("=====Your chance=====")
+
+        stocks = filter(lambda stock: stock.get_last_op() is not None, self.stocks)
+
+        def get_op_date(stock):
+            op = stock.get_last_op()
+            return datetime.strptime(op.op_in, '(+) %Y-%m-%d')
+
+        def get_op_slope(stock):
+            op = stock.get_last_op()
+            return op.slope
+
+        stocks = sorted(stocks, key=get_op_date, reverse=True)
+        stocks = filter(lambda x: get_op_date(x) == get_op_date(stocks[0]), stocks)
+        stocks = sorted(stocks, key=get_op_slope, reverse=True)
+        for stock in stocks:
+            stock.print_loopback_result()
 
     def is_time_to_sell(self, row):
         pass
@@ -428,9 +458,10 @@ class LoopbackPeak(Loopback):
         peaker = Peak(stock.df[row_from:row_to])
         inverse_points = peaker.find_bottom_inverse()
         ops = []
-        for point in inverse_points:
+        for point, slope in inverse_points:
             op = Op()
             op.op_in = '(+) %s' % point['date']
+            op.slope = slope
             ops.append(op)
 
         return LoopbackResult(0, ops)
@@ -446,10 +477,6 @@ class LoopbackBreakresistance(Loopback):
         self._is_data_in_amplitude = False
         self._highest_price = 0.0
 
-    # do not need process
-    def process_stock(self, stock):
-        pass
-
     def print_loopback_condition(self):
         log.info('Loopback condition: break resistance in %d days while amplitude is %f%%', self.date_range, self.amplitude * 100)
 
@@ -462,11 +489,11 @@ class LoopbackBreakresistance(Loopback):
                 stock.print_loopback_result()
 
     def is_time_to_sell(self, row):
-        return False
+        return row['close'] <= row['MA20']
 
     def is_time_to_buy(self, row):
         if self._is_data_in_amplitude:
-            return row['close'] > self._highest_price
+            return row['close'] > self._highest_price and row['close'] > row['MA20']
         else:
             return False
 
@@ -493,4 +520,98 @@ class LoopbackBreakresistance(Loopback):
             self._is_data_in_amplitude = self.data_in_amplitude(self._past_data, self.amplitude)
 
 
+class LoopbackGrid(Loopback):
+    def print_loopback_condition(self):
+        pass
+
+    def is_time_to_sell(self, row):
+        pass
+
+    def is_time_to_buy(self, row):
+        pass
+
+    def where_is_my_chance(self):
+        pass
+
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, mid, range, size):
+        super(LoopbackGrid, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
+        self.top = mid * (1.0 + range)
+        self.bottom = mid / (1.0 + range)
+        self.size = size
+        self.ruler = []
+        self.cur_hold = 0
+        self.mycash = 0.0
+
+    def _init_ruler(self):
+        rate = (1.0 * self.top / self.bottom) ** (1.0 / self.size) - 1
+        cur = self.bottom / (1.0 + rate)
+        for _ in range(self.size + 1):
+            cur *= (1.0 + rate)
+            self.ruler.append(cur)
+
+        # The ruler is has an additional grid, that means the first buy point is ruler[1]
+        self.ruler = self.ruler[::-1]
+        log.info('Ruler:')
+        for i, r in enumerate(self.ruler):
+            log.info('%2d:    %.3f', i, r)
+
+    def buy(self, price, date):
+        buy_cnt = 0
+        for i in range(self.cur_hold + 2, len(self.ruler)):
+            if self.ruler[i] >= price:
+                buy_cnt += 1
+            else:
+                break
+
+        if buy_cnt:
+            self.cur_hold += buy_cnt
+            self.mycash -= (price * buy_cnt)
+            log.info('(+%d) %.2f %s', buy_cnt, price, date)
+
+    def sell(self, price, date):
+        sell_cnt = 0
+        for i in range(self.cur_hold - 1, -1, -1):
+            if price >= self.ruler[i]:
+                sell_cnt += 1
+            else:
+                break
+
+        if sell_cnt:
+            self.cur_hold -= sell_cnt
+            self.mycash += (price * sell_cnt)
+            log.info('(-%d) %.2f %s', sell_cnt, price, date)
+
+    def loopback_one(self, stock):
+        self._init_ruler()
+        start_money = sum(self.ruler)
+        self.mycash = start_money
+        row_from, row_to = self._loop_range(stock.df)
+        df = stock.df[row_from:row_to]
+        last_price = 0.0
+        money_in = []
+        for _, row in df.iterrows():
+            date = row['date']
+
+            for last_price in [row['low'], row['high']]:
+                if self.cur_hold == 0:
+                    self.buy(last_price, date)
+                elif self.cur_hold == len(self.ruler) - 1:
+                    self.sell(last_price, date)
+                elif self.ruler[self.cur_hold + 1] >= last_price:
+                    self.buy(last_price, date)
+                else:
+                    self.sell(last_price, date)
+
+            money_in.append(start_money - self.mycash)
+
+        # log.info('cash %.2f, cur_hold %.2f, start_money %.2f', self.mycash, self.cur_hold * last_price, start_money)
+        avenue = self.mycash + self.cur_hold * last_price - start_money
+        # only calc days hold stocks
+        money_in = filter(lambda x: x > 0.1, money_in)
+        avg_money_in = sum(money_in) / 1.0 / len(money_in)
+
+        log.info('Current hold cnt %d', self.cur_hold)
+        benefit = avenue / avg_money_in
+
+        return LoopbackResult(benefit, [], len(money_in))
 
