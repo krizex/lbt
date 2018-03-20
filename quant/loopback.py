@@ -97,7 +97,7 @@ class Loopback(object):
             try:
                 self.process_stock(stock)
             except:
-                log.error('Error occur when processing %s', stock.code)
+                log.exception('Error occur when processing %s', stock.code)
 
         log.info('Processed all stocks')
 
@@ -123,10 +123,14 @@ class Loopback(object):
                 ret = self.loopback_one(stock)
                 stock.set_loopback_result(ret)
             except Exception as e:
-                log.error('Error occur when looping back %s', stock.code)
+                log.exception('Error occur when looping back %s', stock.code)
 
     def _loop_range(self, df):
-        row_from = df.loc[df['date'] == self.from_date].index[0]
+        try:
+            row_from = df.loc[df['date'] == self.from_date].index[0]
+        except:
+            row_from = 0
+
         if self.to_date:
             row_to = df.loc[df['date'] == self.to_date].index[0]
         else:
@@ -588,11 +592,13 @@ class LoopbackGrid(Loopback):
         row_from, row_to = self._loop_range(stock.df)
         df = stock.df[row_from:row_to]
         last_price = 0.0
-        money_in = []
+        avenues = []
+        costs = []
         for _, row in df.iterrows():
             date = row['date']
 
-            for last_price in [row['low'], row['high']]:
+            # just simulate the fluctuation in one day
+            for last_price in [row['open'], row['close']]:
                 if self.cur_hold == 0:
                     self.buy(last_price, date)
                 elif self.cur_hold == len(self.ruler) - 1:
@@ -602,16 +608,26 @@ class LoopbackGrid(Loopback):
                 else:
                     self.sell(last_price, date)
 
-            money_in.append(start_money - self.mycash)
+            avenue = self.mycash + self.cur_hold * last_price - start_money
+            avenues.append(avenue)
+            cost = start_money - self.mycash + self.ruler[self.cur_hold]
+            costs.append(cost)
 
         # log.info('cash %.2f, cur_hold %.2f, start_money %.2f', self.mycash, self.cur_hold * last_price, start_money)
-        avenue = self.mycash + self.cur_hold * last_price - start_money
-        # only calc days hold stocks
-        money_in = filter(lambda x: x > 0.1, money_in)
-        avg_money_in = sum(money_in) / 1.0 / len(money_in)
+        avenue_rate_per_day = []
+        for i, avenue in enumerate(avenues):
+            avg_cost = sum(costs[:i+1]) / 1.0 / (i + 1)
+            avenue_rate_per_day.append(avenue / 1.0 / avg_cost)
 
+        self.plot(avenue_rate_per_day)
+        # self.plot(costs)
+        # self.plot(avenues)
         log.info('Current hold cnt %d', self.cur_hold)
-        benefit = avenue / avg_money_in
 
-        return LoopbackResult(benefit, [], len(money_in))
+        return LoopbackResult(avenue_rate_per_day[-1], [], len(avenue_rate_per_day))
+
+    def plot(self, avenue_rate_per_day):
+        plt.plot(avenue_rate_per_day)
+        plt.ylabel('Avenue rate per day')
+        plt.show()
 
