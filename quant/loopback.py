@@ -447,7 +447,8 @@ class LoopbackPeak(Loopback):
 
         stocks = sorted(stocks, key=get_op_date, reverse=True)
         stocks = filter(lambda x: get_op_date(x) == get_op_date(stocks[0]), stocks)
-        stocks = sorted(stocks, key=get_op_slope, reverse=True)
+        stocks = filter(lambda x: get_op_slope(x) < 0.0, stocks)
+        stocks = sorted(stocks, key=get_op_slope)
         for stock in stocks:
             stock.print_loopback_result()
 

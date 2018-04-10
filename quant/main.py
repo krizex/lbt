@@ -23,7 +23,7 @@ def loopback_macd_rising_trend(persist_f, from_date, to_date, stop_loss, stop_be
 def loopback_break_resistance(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude):
     loopback = LoopbackBreakresistance(persist_f, from_date, to_date, stop_loss, stop_benefit, date_range, amplitude)
     loopback.init()
-    loopback.best_stocks(is_in_sz50())
+    loopback.best_stocks(is_in_hs300())
 
 
 def loopback_inverse(persist_f, from_date, to_date, stop_loss, stop_benefit):

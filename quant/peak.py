@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import datetime
+
 __author__ = 'Yang Qian'
 
 """
@@ -73,11 +75,17 @@ class Peak(object):
 
         return self._find_peaks(filt, selector)
 
+    def _calc_date_delta(self, start, end):
+        start = datetime.datetime.strptime(start, "%Y-%m-%d").date()
+        end = datetime.datetime.strptime(end, "%Y-%m-%d").date()
+        return (end - start).days
+
     def _find_inverse(self, peaks, will_inverse, calc_slope):
         inverse_peaks = []
         for prev, cur in peaks:
             if will_inverse(prev['close'], cur['close'], prev[self.index_name], cur[self.index_name]):
-                inverse_peaks.append((cur, calc_slope(prev['close'], cur['close'], prev[self.index_name], cur[self.index_name])))
+                interval = self._calc_date_delta(prev['date'], cur['date'])
+                inverse_peaks.append((cur, calc_slope(prev['close'], cur['close'], prev[self.index_name], cur[self.index_name], interval)))
 
         return inverse_peaks
 
@@ -94,9 +102,16 @@ class Peak(object):
         peaks = self.find_down_peaks()
 
         def will_inverse(close_prev, close_now, macd_prev, macd_now):
-            return macd_prev / macd_now > close_now / close_prev
+            return macd_prev < macd_now and close_prev > close_now
 
-        def calc_slope(close_prev, close_now, macd_prev, macd_now):
-            return macd_prev / macd_now
+        def calc_slope(close_prev, close_now, macd_prev, macd_now, interval):
+            x1, y1 = -interval * 1.0, close_prev * 1.0 / close_now
+            x2, y2 = 0, 1
+            x3, y3 = -interval * 1.0, -macd_prev * 1.0 / macd_now
+            x4, y4 = 0, -1
+
+            y = ((x2 - x1) / (y2 - y1) * y1 + x3 - (x4 - x3) / (y4 - y3) * y3 - x1) / ((x2 - x1) / (y2 - y1) - (x4 - x3) / (y4 - y3))
+
+            return y
 
         return self._find_inverse(peaks, will_inverse, calc_slope)
