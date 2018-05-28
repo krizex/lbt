@@ -3,7 +3,7 @@
 from quant.filters import not_startup, is_in_hs300
 from quant.logger.logger import log
 from quant.loopback import LoopbackRSI, LoopbackMACD, LoopbackMACD_RSI, LoopbackMACDRisingTrend, LoopbackMA, LoopbackPeak, \
-    LoopbackBreakresistance, LoopbackGrid
+    LoopbackBreakresistance, LoopbackGrid, LoopbackTrend
 
 __author__ = 'Yang Qian'
 
@@ -130,6 +130,10 @@ def test_one_stock_grid(code, from_date, to_date, mid, range, size):
     loopback = LoopbackGrid(None, from_date, to_date, None, None, mid, range, size)
     loopback.test_loopback_one_by_code(code)
 
+def test_one_stock_trend(code, from_date, to_date, stop_loss, stop_benefit, min_up_days):
+    loopback = LoopbackTrend(None, from_date, to_date, stop_loss, stop_benefit, min_up_days)
+    loopback.test_loopback_one_by_code(code)
+
 
 if __name__ == '__main__':
     d_2015 = '2015-08-14'
@@ -178,5 +182,6 @@ if __name__ == '__main__':
     # test_one_stock_grid('159929', '2017-09-04', '2018-02-27', 1.556, 0.10, 20)
     # test_one_stock_grid('512000', '2017-09-04', '2018-03-12', 0.848, 0.1, 30)
     # test_one_stock_grid('601939', '2017-09-04', '2018-03-12', 8.618, 0.1, 4)
-    test_one_stock_grid('601933', '2017-09-04', '2018-03-12', 10.465, 0.1, 4)
+    # test_one_stock_grid('601933', '2017-09-04', '2018-03-12', 10.465, 0.1, 4)
+    test_one_stock_trend('601933', '2017-09-04', '2018-03-12', -0.2, 0.2, 5)
 

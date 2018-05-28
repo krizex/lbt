@@ -3,7 +3,7 @@
 import os
 import time
 from abc import abstractmethod, ABCMeta, abstractproperty
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import tushare as ts
 
@@ -445,8 +445,11 @@ class LoopbackPeak(Loopback):
             op = stock.get_last_op()
             return op.slope
 
+
         stocks = sorted(stocks, key=get_op_date, reverse=True)
-        stocks = filter(lambda x: get_op_date(x) == get_op_date(stocks[0]), stocks)
+        end_date = get_op_date(stocks[0])
+        start_date = end_date - timedelta(days=7)
+        stocks = filter(lambda x: start_date <= get_op_date(x) <= end_date, stocks)
         stocks = filter(lambda x: get_op_slope(x) < 0.0, stocks)
         stocks = sorted(stocks, key=get_op_slope)
         for stock in stocks:
@@ -632,3 +635,48 @@ class LoopbackGrid(Loopback):
         plt.ylabel('Avenue rate per day')
         plt.show()
 
+
+class LoopbackTrend(Loopback):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_day):
+        super(LoopbackTrend, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
+        self.min_up_day = min_up_day
+        # internal result
+        self._past_data = []
+        self._is_data_in_amplitude = False
+        self._highest_price = 0.0
+
+    def _init_inter_result(self):
+        self.up_day_cnt = 0
+
+    def print_loopback_condition(self):
+        log.info('Loopback condition: trend in more than %d days', self.min_up_day)
+
+    def where_is_my_chance(self):
+        log.info("=====Your chance=====")
+        stocks = []
+
+        for i, stock in enumerate(self.stocks):
+            up_days = stock.calc_trend_day_cnt()
+            if up_days >= self.min_up_day:
+                stocks.append((up_days, stock))
+
+        stocks = sorted(stocks, key=lambda x: x[0], reverse=True)
+
+        for i, stock in enumerate(stocks):
+            log.info('%d: up %d days', i+1, stock[0])
+            stock[1].print_loopback_result()
+
+    def is_time_to_sell(self, row):
+        return row['close'] <= row['MA20']
+
+    def is_time_to_buy(self, row):
+        if self.up_day_cnt >= self.min_up_day:
+            return True
+        else:
+            return False
+
+    def _set_inter_result(self, row):
+        if row['close'] >= row['MA10']:
+            self.up_day_cnt += 1
+        else:
+            self.up_day_cnt = 0
