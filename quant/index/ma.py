@@ -14,6 +14,7 @@ import talib
 
 def add_ma(df):
     close = np.array([float(x) for x in df['close']])
+    df['MA5'] = talib.SMA(close, timeperiod=5)
     df['MA10'] = talib.SMA(close, timeperiod=10)
     df['MA20'] = talib.SMA(close, timeperiod=20)
     df['MA60'] = talib.SMA(close, timeperiod=60)

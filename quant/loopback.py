@@ -3,7 +3,9 @@
 import os
 import time
 from abc import abstractmethod, ABCMeta, abstractproperty
+from contextlib import contextmanager
 from datetime import datetime, timedelta
+from multiprocessing import Pool
 
 import tushare as ts
 
@@ -21,6 +23,49 @@ Created on 01/31/2018
 @author: Yang Qian
 
 """
+
+
+def build_stock(stock):
+    idx = stock[0]
+    code = stock[1][0]
+    info = stock[1][0]
+    log.debug('%d Fetching %s', idx, code)
+    try:
+        stock = Stock(code, info)
+        return stock
+    except Exception as e:
+        log.error('Error fetching %s', code)
+        return None
+
+
+def process_stock(stock):
+    try:
+        if len(stock.df) == 0:
+            return stock
+
+        stock.add_macd()
+        stock.add_ma()
+    except:
+        log.exception('Error occur when processing %s', stock.code)
+
+    return stock
+
+
+def loopback_stock((loopback, stock)):
+    try:
+        result = loopback.loopback_one(stock)
+        stock.set_loopback_result(result)
+    except Exception as e:
+        log.exception('Error occur when looping back %s', stock.code)
+
+    return stock
+
+
+@contextmanager
+def create_pool(pool_size):
+    pool = Pool(pool_size)
+    yield pool
+    pool.close()
 
 
 class LoopbackResult(object):
@@ -44,6 +89,7 @@ class Op(object):
         self.slope = 0.0
 
 
+
 class Loopback(object):
     __metaclass__ = ABCMeta
 
@@ -59,20 +105,13 @@ class Loopback(object):
     def init(self):
         self.stocks = self.fetch_stocks()
 
-    def process_stock(self, stock):
-        if len(stock.df) == 0:
-            return
-
-        stock.add_macd()
-        stock.add_ma()
-
     def persiste_f_name(self, name):
         if name:
             return name
         now = int(time.time())
         time_array = time.localtime(now)
         t = time.strftime("%Y-%m-%d", time_array)
-        return 'stocks-%s.dat' % t
+        return 'data/stocks-%s.dat' % t
 
     def read_stocks_from_persist(self):
         log.info("Read stocks from file:%s", self.persist_f)
@@ -92,38 +131,30 @@ class Loopback(object):
             self.persist_stocks(stocks)
 
         log.info('Fetched all stocks')
+        return self.process_stocks(stocks)
 
-        for stock in stocks:
-            try:
-                self.process_stock(stock)
-            except:
-                log.exception('Error occur when processing %s', stock.code)
-
+    def process_stocks(self, stocks):
+        with create_pool(4) as pool:
+            stocks = pool.map(process_stock, stocks)
         log.info('Processed all stocks')
-
         return stocks
 
     def _fetch_stocks(self):
         log.info("Fetch stocks from web")
-        ret = []
         stocks = ts.get_stock_basics()
-        for i, (code, info) in enumerate(stocks.iterrows()):
-            log.debug('%d Fetching %s', i, code)
-            try:
-                stock = Stock(code, info)
-                ret.append(stock)
-            except Exception as e:
-                log.error('Error fetching %s', code)
-
-        return ret
+        with create_pool(4) as pool:
+            ret = pool.map(build_stock, [(i, stock) for i, stock in enumerate(stocks.iterrows())])
+            ret = filter(lambda x: x is not None, ret)
+            return ret
 
     def loopback(self):
+        stocks = []
         for stock in self.stocks:
-            try:
-                ret = self.loopback_one(stock)
-                stock.set_loopback_result(ret)
-            except Exception as e:
-                log.exception('Error occur when looping back %s', stock.code)
+            stocks.append(loopback_stock((self, stock)))
+
+        self.stocks = stocks
+        # with create_pool(4) as pool:
+        #     self.stocks = pool.map(loopback_stock, [(self, stock) for stock in self.stocks])
 
     def _loop_range(self, df):
         try:
@@ -445,7 +476,6 @@ class LoopbackPeak(Loopback):
             op = stock.get_last_op()
             return op.slope
 
-
         stocks = sorted(stocks, key=get_op_date, reverse=True)
         end_date = get_op_date(stocks[0])
         start_date = end_date - timedelta(days=7)
@@ -637,26 +667,27 @@ class LoopbackGrid(Loopback):
 
 
 class LoopbackTrend(Loopback):
-    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_day):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_day, index):
         super(LoopbackTrend, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
         self.min_up_day = min_up_day
         # internal result
         self._past_data = []
         self._is_data_in_amplitude = False
         self._highest_price = 0.0
+        self.index = index
 
     def _init_inter_result(self):
         self.up_day_cnt = 0
 
     def print_loopback_condition(self):
-        log.info('Loopback condition: trend in more than %d days', self.min_up_day)
+        log.info('Loopback condition: %s trend in more than %d days', self.index, self.min_up_day)
 
     def where_is_my_chance(self):
         log.info("=====Your chance=====")
         stocks = []
 
         for i, stock in enumerate(self.stocks):
-            up_days = stock.calc_trend_day_cnt()
+            up_days = stock.calc_trend_day_cnt(self.index)
             if up_days >= self.min_up_day:
                 stocks.append((up_days, stock))
 
@@ -676,7 +707,7 @@ class LoopbackTrend(Loopback):
             return False
 
     def _set_inter_result(self, row):
-        if row['close'] >= row['MA10']:
+        if row['close'] >= row[self.index]:
             self.up_day_cnt += 1
         else:
             self.up_day_cnt = 0

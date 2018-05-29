@@ -91,11 +91,11 @@ class Stock(object):
     def get_benefit(self):
         return self.loopback_result.benefit
 
-    def calc_trend_day_cnt(self):
+    def calc_trend_day_cnt(self, index):
         cnt = 0
         for idx in reversed(self.df.index):
             row = self.df.loc[idx]
-            if row['close'] >= row['MA10']:
+            if row['close'] >= row[index]:
                 cnt += 1
             else:
                 break

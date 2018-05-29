@@ -34,10 +34,10 @@ def loopback_inverse(persist_f, from_date, to_date, stop_loss, stop_benefit):
     loopback.best_stocks()
 
 
-def loopback_trend(persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_days):
+def loopback_trend(persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_days, index):
     """Rising trend
     """
-    loopback = LoopbackTrend(persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_days)
+    loopback = LoopbackTrend(persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_days, index)
     loopback.init()
     loopback.best_stocks()
 
@@ -53,4 +53,4 @@ if __name__ == '__main__':
     # find break resistance
     # loopback_break_resistance(None, d_2017, None, -0.03, 0.3, 30, 0.05)
 
-    loopback_trend(None, d_2017, None, -0.2, 0.2, 10)
+    loopback_trend(None, d_2017, None, -0.2, 0.2, 10, 'MA10')
