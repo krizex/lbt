@@ -25,10 +25,7 @@ Created on 01/31/2018
 """
 
 
-def build_stock(stock):
-    idx = stock[0]
-    code = stock[1][0]
-    info = stock[1][0]
+def build_stock(idx, (code, info)):
     log.debug('%d Fetching %s', idx, code)
     try:
         stock = Stock(code, info)
@@ -63,9 +60,11 @@ def loopback_stock((loopback, stock)):
 
 @contextmanager
 def create_pool(pool_size):
+    log.debug('create pool(%d)', pool_size)
     pool = Pool(pool_size)
     yield pool
     pool.close()
+    log.debug('close pool')
 
 
 class LoopbackResult(object):
@@ -143,18 +142,16 @@ class Loopback(object):
         log.info("Fetch stocks from web")
         stocks = ts.get_stock_basics()
         with create_pool(4) as pool:
-            ret = pool.map(build_stock, [(i, stock) for i, stock in enumerate(stocks.iterrows())])
+            ret = pool.map(build_stock, [(i, (code, info)) for i, stock in enumerate(stocks.iterrows())])
             ret = filter(lambda x: x is not None, ret)
             return ret
 
     def loopback(self):
-        stocks = []
-        for stock in self.stocks:
-            stocks.append(loopback_stock((self, stock)))
-
-        self.stocks = stocks
-        # with create_pool(4) as pool:
-        #     self.stocks = pool.map(loopback_stock, [(self, stock) for stock in self.stocks])
+        # Temporary wipe the stocks in `self` to make the IPC faster
+        stocks = self.stocks
+        self.stocks = None
+        with create_pool(4) as pool:
+            self.stocks = pool.map(loopback_stock, [(self, stock) for stock in stocks])
 
     def _loop_range(self, df):
         try:

@@ -28,6 +28,13 @@ class Stock(object):
     def pe(self):
         return self.info['pe']
 
+    @property
+    def name(self):
+        try:
+            return self.info['name'].decode('utf8')
+        except:
+            return 'UNKNOWN'
+
     def add_rsi(self, period):
         add_rsi(self.df, period)
 
@@ -41,7 +48,7 @@ class Stock(object):
         self.loopback_result = result
 
     def print_loopback_result(self):
-        log.info('%s %s %f%%' % (self.code, self.info['name'].decode('utf8'), self.loopback_result.benefit * 100))
+        log.info('%s %s %f%%' % (self.code, self.name, self.loopback_result.benefit * 100))
         if self.loopback_result.hold_days:
             log.info('hold %d days', self.loopback_result.hold_days)
         for op in self.loopback_result.ops:
