@@ -93,7 +93,7 @@ class Stock(object):
 
     def calc_trend_day_cnt(self):
         cnt = 0
-        for idx in reversed(self.df.ndex):
+        for idx in reversed(self.df.index):
             row = self.df.loc[idx]
             if row['close'] >= row['MA10']:
                 cnt += 1

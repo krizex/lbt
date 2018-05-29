@@ -680,3 +680,6 @@ class LoopbackTrend(Loopback):
             self.up_day_cnt += 1
         else:
             self.up_day_cnt = 0
+
+    def plot_benefit(self, title, stocks):
+        pass

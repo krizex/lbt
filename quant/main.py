@@ -53,4 +53,4 @@ if __name__ == '__main__':
     # find break resistance
     # loopback_break_resistance(None, d_2017, None, -0.03, 0.3, 30, 0.05)
 
-    loopback_trend(None, d_2017, None, -0.2, 0.2, 5)
+    loopback_trend(None, d_2017, None, -0.2, 0.2, 10)
