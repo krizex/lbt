@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from quant.filters import is_in_hs300, is_in_sz50
+from quant.filters import is_in_hs300, is_in_sz50, not_startup
 from quant.loopback import LoopbackMACDRisingTrend, LoopbackPeak, LoopbackBreakresistance, LoopbackTrend
 
 __author__ = 'Yang Qian'
@@ -39,7 +39,7 @@ def loopback_trend(persist_f, from_date, to_date, stop_loss, stop_benefit, min_u
     """
     loopback = LoopbackTrend(persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_days, index)
     loopback.init()
-    loopback.best_stocks()
+    loopback.best_stocks(not_startup)
 
 
 if __name__ == '__main__':

@@ -25,8 +25,8 @@ Created on 01/31/2018
 """
 
 
-def build_stock(idx, (code, info)):
-    log.debug('%d Fetching %s', idx, code)
+def build_stock((idx, (code, info))):
+    log.debug('%d Fetching %s %s', idx, code, info['name'].decode('utf8'))
     try:
         stock = Stock(code, info)
         return stock
@@ -133,6 +133,10 @@ class Loopback(object):
         return self.process_stocks(stocks)
 
     def process_stocks(self, stocks):
+        for stock in stocks:
+            log.info(stock.name)
+
+        exit(1)
         with create_pool(4) as pool:
             stocks = pool.map(process_stock, stocks)
         log.info('Processed all stocks')
@@ -142,7 +146,7 @@ class Loopback(object):
         log.info("Fetch stocks from web")
         stocks = ts.get_stock_basics()
         with create_pool(4) as pool:
-            ret = pool.map(build_stock, [(i, (code, info)) for i, stock in enumerate(stocks.iterrows())])
+            ret = pool.map(build_stock, [(i, stock) for i, stock in enumerate(stocks.iterrows())])
             ret = filter(lambda x: x is not None, ret)
             return ret
 

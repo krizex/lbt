@@ -12,8 +12,7 @@ Created on 02/22/2018
 
 
 def not_startup(stock):
-    return not (stock.code.startswith('300') or stock.code.startswith('002'))
-
+    return not (stock.code.startswith('300'))
 
 def pe_less_than(pe):
     return lambda stock: stock.pe < pe
