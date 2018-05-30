@@ -58,13 +58,17 @@ def loopback_stock((loopback, stock)):
     return stock
 
 
+g_pool = None
 @contextmanager
-def create_pool(pool_size):
-    log.debug('create pool(%d)', pool_size)
-    pool = Pool(pool_size)
-    yield pool
-    pool.close()
-    log.debug('close pool')
+def create_pool(target):
+    global g_pool
+    if g_pool is None:
+        log.debug('create pool')
+        g_pool = Pool(4)
+
+    log.debug('enter pool: %s', target)
+    yield g_pool
+    log.debug('exit pool: %s', target)
 
 
 class LoopbackResult(object):
@@ -133,7 +137,7 @@ class Loopback(object):
         return self.process_stocks(stocks)
 
     def process_stocks(self, stocks):
-        with create_pool(4) as pool:
+        with create_pool('process stocks') as pool:
             stocks = pool.map(process_stock, stocks)
         log.info('Processed all stocks')
         return stocks
@@ -141,7 +145,7 @@ class Loopback(object):
     def _fetch_stocks(self):
         log.info("Fetch stocks from web")
         stocks = ts.get_stock_basics()
-        with create_pool(4) as pool:
+        with create_pool('fetch stocks') as pool:
             ret = pool.map(build_stock, [(i, stock) for i, stock in enumerate(stocks.iterrows())])
             ret = filter(lambda x: x is not None, ret)
             return ret
@@ -150,7 +154,7 @@ class Loopback(object):
         # Temporary wipe the stocks in `self` to make the IPC faster
         stocks = self.stocks
         self.stocks = None
-        with create_pool(4) as pool:
+        with create_pool('loopback') as pool:
             self.stocks = pool.map(loopback_stock, [(self, stock) for stock in stocks])
 
     def _loop_range(self, df):
