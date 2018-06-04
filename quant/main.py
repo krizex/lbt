@@ -3,8 +3,8 @@
 import signal
 
 from quant.filters import is_in_hs300, is_in_sz50, not_startup
-from quant.logger.logger import log
-from quant.loopback import LoopbackMACDRisingTrend, LoopbackPeak, LoopbackBreakresistance, LoopbackTrend, g_pool
+from quant.loopback import LoopbackMACDRisingTrend, LoopbackPeak, LoopbackBreakresistance, LoopbackTrend, g_pool, \
+    setup_signal_handler, terminate_pool_and_exit
 
 __author__ = 'Yang Qian'
 
@@ -45,22 +45,7 @@ def loopback_trend(persist_f, from_date, to_date, stop_loss, stop_benefit, min_u
     loopback.best_stocks(not_startup)
 
 
-def terminate_pool_and_exit(signum, frame):
-    log.warn('Handle signal')
-    if g_pool is not None:
-        log.info('closing pool...')
-        g_pool.terminate()
-        g_pool.join()
-    exit(1)
-
-
-def setup_signal_handler():
-    for sig in [signal.SIGTERM, signal.SIGINT]:
-        signal.signal(sig, terminate_pool_and_exit)
-
-
 def main():
-    # setup_signal_handler()
     d_2017 = '2017-03-03'
     # rising trend &&  macd up
     # loopback_macd_rising_trend(None, d_2017, None, -0.05, None)
@@ -71,7 +56,7 @@ def main():
     # find break resistance
     # loopback_break_resistance(None, d_2017, None, -0.03, 0.3, 30, 0.05)
 
-    loopback_trend(None, d_2017, None, -0.2, 0.2, 10, 'MA5')
+    loopback_trend(None, d_2017, None, -0.1, 0.1, 10, 'MA5')
 
 
 if __name__ == '__main__':

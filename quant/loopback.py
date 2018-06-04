@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from multiprocessing import Pool
 
+import signal
 import tushare as ts
 
 from quant.helpers import is_rising_trend
@@ -23,6 +24,21 @@ Created on 01/31/2018
 @author: Yang Qian
 
 """
+
+
+def terminate_pool_and_exit(signum, frame):
+    global g_pool
+    log.warn('Handle signal')
+    if g_pool is not None:
+        log.info('closing pool...')
+        g_pool.terminate()
+        g_pool.join()
+    exit(1)
+
+
+def setup_signal_handler(handler):
+    for sig in [signal.SIGTERM, signal.SIGINT]:
+        signal.signal(sig, handler)
 
 
 def build_stock((idx, (code, info))):
@@ -63,8 +79,10 @@ g_pool = None
 def create_pool(target):
     global g_pool
     if g_pool is None:
+        setup_signal_handler(signal.SIG_IGN)
         log.debug('create pool')
         g_pool = Pool(4)
+        setup_signal_handler(terminate_pool_and_exit)
 
     log.debug('enter pool: %s', target)
     yield g_pool
@@ -90,7 +108,6 @@ class Op(object):
         self.op_out = ''
         self.benefit = 0.0
         self.slope = 0.0
-
 
 
 class Loopback(object):
