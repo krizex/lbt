@@ -30,7 +30,7 @@ def terminate_pool_and_exit(signum, frame):
     global g_pool
     log.warn('Handle signal')
     if g_pool is not None:
-        log.info('closing pool...')
+        log.info('Closing pool...')
         g_pool.terminate()
         g_pool.join()
     exit(1)
@@ -58,6 +58,7 @@ def process_stock(stock):
 
         stock.add_macd()
         stock.add_ma()
+        stock.add_vma()
     except:
         log.exception('Error occur when processing %s', stock.code)
 
@@ -80,13 +81,15 @@ def create_pool(target):
     global g_pool
     if g_pool is None:
         setup_signal_handler(signal.SIG_IGN)
-        log.debug('create pool')
+        log.debug('Create pool')
         g_pool = Pool(4)
         setup_signal_handler(terminate_pool_and_exit)
 
-    log.debug('enter pool: %s', target)
+    log.debug('Enter pool: %s', target)
+    start = datetime.now()
     yield g_pool
-    log.debug('exit pool: %s', target)
+    cost = datetime.now() - start
+    log.debug('Exit pool: %s, takes %d seconds', target, cost.total_seconds())
 
 
 class LoopbackResult(object):
@@ -306,6 +309,7 @@ class Loopback(object):
         self.plot_benefit("%s Math expt: %f" % (period, math_expt), self.stocks)
         # plot_hist(sorted_stocks)
 
+        self.print_loopback_condition()
         self.where_is_my_chance()
 
     @abstractmethod
@@ -685,27 +689,29 @@ class LoopbackGrid(Loopback):
 
 
 class LoopbackTrend(Loopback):
-    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_day, index):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, min_up_day, close_ma, volume_ma, volume_ratio):
         super(LoopbackTrend, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
         self.min_up_day = min_up_day
         # internal result
         self._past_data = []
         self._is_data_in_amplitude = False
         self._highest_price = 0.0
-        self.index = index
+        self.close_ma = close_ma
+        self.volume_ma = volume_ma
+        self.volume_ratio = volume_ratio
 
     def _init_inter_result(self):
         self.up_day_cnt = 0
 
     def print_loopback_condition(self):
-        log.info('Loopback condition: %s trend in more than %d days', self.index, self.min_up_day)
+        log.info('Loopback condition: %s and %s trend in more than %d days', self.close_ma, self.volume_ma, self.min_up_day)
 
     def where_is_my_chance(self):
         log.info("=====Your chance=====")
         stocks = []
 
         for i, stock in enumerate(self.stocks):
-            up_days = stock.calc_trend_day_cnt(self.index)
+            up_days = stock.calc_trend_day_cnt(self.close_ma, self.volume_ma, self.volume_ratio)
             if up_days >= self.min_up_day:
                 stocks.append((up_days, stock))
 
@@ -725,7 +731,7 @@ class LoopbackTrend(Loopback):
             return False
 
     def _set_inter_result(self, row):
-        if row['close'] >= row[self.index]:
+        if row['close'] >= row[self.close_ma] and row['volume'] >= row[self.volume_ma] * self.volume_ratio:
             self.up_day_cnt += 1
         else:
             self.up_day_cnt = 0

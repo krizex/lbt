@@ -4,6 +4,7 @@ from quant.helpers import is_rising_trend
 from quant.index.ma import add_ma
 from quant.index.rsi import add_rsi
 from quant.index.macd import add_macd
+from quant.index.vma import add_vma
 from quant.logger.logger import log
 
 __author__ = 'Yang Qian'
@@ -43,6 +44,9 @@ class Stock(object):
 
     def add_ma(self):
         add_ma(self.df)
+
+    def add_vma(self):
+        add_vma(self.df)
 
     def set_loopback_result(self, result):
         self.loopback_result = result
@@ -98,11 +102,11 @@ class Stock(object):
     def get_benefit(self):
         return self.loopback_result.benefit
 
-    def calc_trend_day_cnt(self, index):
+    def calc_trend_day_cnt(self, close_ma, volume_ma, volume_ratio):
         cnt = 0
         for idx in reversed(self.df.index):
             row = self.df.loc[idx]
-            if row['close'] >= row[index]:
+            if row['close'] >= row[close_ma] and row['volume'] >= row[volume_ma] * volume_ratio:
                 cnt += 1
             else:
                 break
