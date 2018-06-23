@@ -215,25 +215,25 @@ class Loopback(object):
                     op.op_in = '(+) %s' % row['date']
                     ops.append(op)
             else:
-                out_price = row['close']
-                cur_benefit = out_price / in_price
+                cur_benefit = row['close'] / in_price
+                cur_benefit_top = row['high'] / in_price
+                cur_benefit_bottom = row['low'] / in_price
                 if self.is_time_to_sell(row):
                     benefit *= cur_benefit
                     hold = False
                     op = ops[-1]
                     op.op_out = '(-) %s' % row['date']
                     op.benefit = cur_benefit - 1
-                elif cur_benefit < 1.0 + self.stop_loss:
-                    benefit *= cur_benefit
+                elif self.stop_benefit and cur_benefit_top - self.stop_benefit >= 1.0:
+                    benefit *= cur_benefit_top
+                    hold = False
+                    op.op_out = '(-^) %s' % row['date']
+                    op.benefit = cur_benefit_top - 1
+                elif cur_benefit_bottom < 1.0 + self.stop_loss:
+                    benefit *= cur_benefit_bottom
                     hold = False
                     op.op_out = '(-V) %s' % row['date']
-                    op.benefit = cur_benefit - 1
-                elif self.stop_benefit:
-                    if cur_benefit - self.stop_benefit >= 1.0:
-                        benefit *= cur_benefit
-                        hold = False
-                        op.op_out = '(-^) %s' % row['date']
-                        op.benefit = cur_benefit - 1
+                    op.benefit = cur_benefit_bottom - 1
 
             self._set_inter_result(row)
 
@@ -304,7 +304,7 @@ class Loopback(object):
             total_benefit += stock.get_benefit()
 
         math_expt = total_benefit / len(self.stocks)
-        log.info('Benefit mathematical expectation: %f', math_expt)
+        log.info('Benefit mathematical expectation: %f%%', math_expt * 100)
 
         self.plot_benefit("%s Math expt: %f" % (period, math_expt), self.stocks)
         # plot_hist(sorted_stocks)
@@ -722,10 +722,13 @@ class LoopbackTrend(Loopback):
             stock[1].print_loopback_result()
 
     def is_time_to_sell(self, row):
-        return row['close'] <= row['MA20']
+        return False
+        # return row['close'] <= row['MA20']
 
     def is_time_to_buy(self, row):
-        if self.up_day_cnt >= self.min_up_day:
+        if self.up_day_cnt >= self.min_up_day \
+                and abs(row['close'] / self.last_close - 1) <= 9.9 / 100 \
+                and row['close'] < self.last_close:
             return True
         else:
             return False
@@ -735,6 +738,61 @@ class LoopbackTrend(Loopback):
             self.up_day_cnt += 1
         else:
             self.up_day_cnt = 0
+
+        self.last_close = row['close']
+
+    def plot_benefit(self, title, stocks):
+        pass
+
+
+class LoopbackPriceVol(Loopback):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit, vol_expand):
+        super(LoopbackPriceVol, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
+        self.vol_expand = vol_expand
+
+    def print_loopback_condition(self):
+        log.info('Loopback condition: vol expand %f', self.vol_expand)
+
+    def where_is_my_chance(self):
+        log.info("=====Your chance=====")
+        stocks = []
+
+        for i, stock in enumerate(self.stocks):
+            vol_expand = stock.calc_vol_expand()
+            if vol_expand >= self.vol_expand:
+                stocks.append((vol_expand, stock))
+
+        stocks = sorted(stocks, key=lambda x: x[0], reverse=True)
+
+        for i, (vol_expand, stock) in enumerate(stocks):
+            log.info('%d: volume expand %f', i+1, vol_expand)
+            stock.print_loopback_result()
+
+    def _init_inter_result(self):
+        self.last_row = None
+        self.is_time_to_check = False
+
+    def is_time_to_buy(self, row):
+        if self.is_time_to_check \
+                and row['close'] > self.last_row['close']:
+            return True
+
+        return False
+
+    def is_time_to_sell(self, row):
+        return False
+
+    def _set_inter_result(self, row):
+        if self.last_row is not None:
+            incr = row['close'] / self.last_row['close']
+            # volume expands but price not increase much
+            if 1.003 <= incr <= 1.01 \
+                    and (row['volume'] / row['V_MA5']) >= self.vol_expand:
+                self.is_time_to_check = True
+            else:
+                self.is_time_to_check = False
+
+        self.last_row = row
 
     def plot_benefit(self, title, stocks):
         pass

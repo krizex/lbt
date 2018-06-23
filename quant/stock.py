@@ -113,3 +113,7 @@ class Stock(object):
 
         return cnt
 
+    def calc_vol_expand(self):
+        today = self.df.shape[0] - 1
+        row = self.df.loc[today]
+        return row['volume'] / row['V_MA5']
