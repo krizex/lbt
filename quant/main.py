@@ -62,7 +62,7 @@ def main():
     # find break resistance
     # loopback_break_resistance(None, d_2017, None, -0.03, 0.3, 30, 0.05)
 
-    loopback_trend(None, d_2017, None, -0.03, 0.01, 7, 'MA5', 'V_MA10', 1)
+    loopback_trend(None, d_2017, None, -0.03, 0.01, 5, 'MA5', 'V_MA10', 1)
 
     # loopback_vol_price(None, d_2017, None, -0.05, 0.01, 2.5)
 

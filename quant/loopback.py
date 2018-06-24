@@ -59,6 +59,7 @@ def process_stock(stock):
         stock.add_macd()
         stock.add_ma()
         stock.add_vma()
+        stock.add_p_change()
     except:
         log.exception('Error occur when processing %s', stock.code)
 
@@ -177,18 +178,16 @@ class Loopback(object):
         with create_pool('loopback') as pool:
             self.stocks = pool.map(loopback_stock, [(self, stock) for stock in stocks])
 
-    def _loop_range(self, df):
+    def _select_range(self, df):
         try:
-            row_from = df.loc[df['date'] == self.from_date].index[0]
+            if self.from_date:
+                df = df.loc[df['date'] >= self.from_date]
+            if self.to_date:
+                df = df.loc[df['date'] <= self.to_date]
         except:
-            row_from = 0
+            pass
 
-        if self.to_date:
-            row_to = df.loc[df['date'] == self.to_date].index[0]
-        else:
-            row_to = df.shape[0]
-
-        return row_from, row_to
+        return df
 
     def _set_inter_result(self, row):
         pass
@@ -197,8 +196,7 @@ class Loopback(object):
         pass
 
     def loopback_one(self, stock):
-        row_from, row_to = self._loop_range(stock.df)
-        df = stock.df[row_from:row_to]
+        df = self._select_range(stock.df)
         hold = False
         benefit = 1.0
         in_price = 0.0
@@ -514,8 +512,8 @@ class LoopbackPeak(Loopback):
         pass
 
     def loopback_one(self, stock):
-        row_from, row_to = self._loop_range(stock.df)
-        peaker = Peak(stock.df[row_from:row_to])
+        df = self._select_range(stock.df)
+        peaker = Peak(df)
         inverse_points = peaker.find_bottom_inverse()
         ops = []
         for point, slope in inverse_points:
@@ -645,8 +643,7 @@ class LoopbackGrid(Loopback):
         self._init_ruler()
         start_money = sum(self.ruler)
         self.mycash = start_money
-        row_from, row_to = self._loop_range(stock.df)
-        df = stock.df[row_from:row_to]
+        df = self._select_range(stock.df)
         last_price = 0.0
         avenues = []
         costs = []
@@ -727,19 +724,19 @@ class LoopbackTrend(Loopback):
 
     def is_time_to_buy(self, row):
         if self.up_day_cnt >= self.min_up_day \
-                and abs(row['close'] / self.last_close - 1) <= 9.9 / 100 \
-                and row['close'] < self.last_close:
+                and abs(row['p_change']) <= Stock.MAX_INCR \
+                and row['p_change'] < 0.0:
             return True
         else:
             return False
 
     def _set_inter_result(self, row):
-        if row['close'] >= row[self.close_ma] and row['volume'] >= row[self.volume_ma] * self.volume_ratio:
+        if row['close'] >= row[self.close_ma] \
+                and row['volume'] >= row[self.volume_ma] * self.volume_ratio \
+                and abs(row['p_change']) < Stock.MAX_INCR:
             self.up_day_cnt += 1
         else:
             self.up_day_cnt = 0
-
-        self.last_close = row['close']
 
     def plot_benefit(self, title, stocks):
         pass
@@ -774,7 +771,7 @@ class LoopbackPriceVol(Loopback):
 
     def is_time_to_buy(self, row):
         if self.is_time_to_check \
-                and row['close'] > self.last_row['close']:
+                and row['p_change'] > 0:
             return True
 
         return False
@@ -784,9 +781,8 @@ class LoopbackPriceVol(Loopback):
 
     def _set_inter_result(self, row):
         if self.last_row is not None:
-            incr = row['close'] / self.last_row['close']
             # volume expands but price not increase much
-            if 1.003 <= incr <= 1.01 \
+            if 0.003 <= row['p_change'] <= 0.01 \
                     and (row['volume'] / row['V_MA5']) >= self.vol_expand:
                 self.is_time_to_check = True
             else:

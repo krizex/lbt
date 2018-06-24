@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from quant.helpers import is_rising_trend
+from quant.index.change import add_p_change
 from quant.index.ma import add_ma
 from quant.index.rsi import add_rsi
 from quant.index.macd import add_macd
@@ -19,6 +20,8 @@ import tushare as ts
 
 
 class Stock(object):
+    MAX_INCR = 9.9 / 100
+
     def __init__(self, code, info):
         self.code = code
         self.info = info
@@ -47,6 +50,9 @@ class Stock(object):
 
     def add_vma(self):
         add_vma(self.df)
+
+    def add_p_change(self):
+        add_p_change(self.df)
 
     def set_loopback_result(self, result):
         self.loopback_result = result
@@ -106,7 +112,9 @@ class Stock(object):
         cnt = 0
         for idx in reversed(self.df.index):
             row = self.df.loc[idx]
-            if row['close'] >= row[close_ma] and row['volume'] >= row[volume_ma] * volume_ratio:
+            if row['close'] >= row[close_ma] \
+                    and row['volume'] >= row[volume_ma] * volume_ratio \
+                    and abs(row['p_change']) < self.MAX_INCR:
                 cnt += 1
             else:
                 break
