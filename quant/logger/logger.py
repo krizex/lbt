@@ -24,7 +24,7 @@ class Logger(object):
         if not os.path.exists(log_file_dir):
             os.mkdir(log_file_dir)
 
-        formatter = logging.Formatter("[%(asctime)s] - %(name)-10s - %(levelname)s: %(message)s",
+        formatter = logging.Formatter("[%(asctime)s] - %(name)s - %(levelname)s: %(message)s",
                                       "%Y-%m-%d %H:%M:%S")
 
         handler = RotatingFileHandler(

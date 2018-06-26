@@ -12,7 +12,9 @@ import tushare as ts
 
 from quant.helpers import is_rising_trend
 from quant.logger.logger import log
+from quant.operation import Op
 from quant.peak import Peak
+from quant.result import LoopbackResult
 from quant.stock import Stock
 import cPickle as pickle
 import matplotlib.pyplot as plt
@@ -93,25 +95,10 @@ def create_pool(target):
     log.debug('Exit pool: %s, takes %d seconds', target, cost.total_seconds())
 
 
-class LoopbackResult(object):
-    def __init__(self, benefit, ops, hold_days=0):
-        self.benefit = benefit
-        self.ops = ops
-        self.hold_days = hold_days
-
-
 class LoopInterResult(object):
     def __init__(self):
         self.last_macd = 0.0
         self.last_ma_gap = 0.0
-
-
-class Op(object):
-    def __init__(self):
-        self.op_in = ''
-        self.op_out = ''
-        self.benefit = 0.0
-        self.slope = 0.0
 
 
 class Loopback(object):
@@ -198,7 +185,6 @@ class Loopback(object):
     def loopback_one(self, stock):
         df = self._select_range(stock.df)
         hold = False
-        benefit = 1.0
         in_price = 0.0
         last_price = 0.0
         ops = []
@@ -213,25 +199,23 @@ class Loopback(object):
                     op.op_in = '(+) %s' % row['date']
                     ops.append(op)
             else:
+                op = ops[-1]
+                op.hold_days += 1
                 cur_benefit = row['close'] / in_price
                 cur_benefit_top = row['high'] / in_price
                 cur_benefit_bottom = row['low'] / in_price
                 if self.is_time_to_sell(row):
-                    benefit *= cur_benefit
                     hold = False
-                    op = ops[-1]
                     op.op_out = '(-) %s' % row['date']
                     op.benefit = cur_benefit - 1
                 elif self.stop_benefit and cur_benefit_top - self.stop_benefit >= 1.0:
-                    benefit *= cur_benefit_top
                     hold = False
                     op.op_out = '(-^) %s' % row['date']
-                    op.benefit = cur_benefit_top - 1
+                    op.benefit = self.stop_benefit
                 elif cur_benefit_bottom < 1.0 + self.stop_loss:
-                    benefit *= cur_benefit_bottom
                     hold = False
                     op.op_out = '(-V) %s' % row['date']
-                    op.benefit = cur_benefit_bottom - 1
+                    op.benefit = self.stop_loss
 
             self._set_inter_result(row)
 
@@ -239,9 +223,8 @@ class Loopback(object):
         if ops and ops[-1].op_out == '':
             cur_benefit = last_price / in_price
             ops[-1].benefit = cur_benefit - 1
-            benefit *= cur_benefit
 
-        return LoopbackResult(benefit - 1, ops)
+        return LoopbackResult(ops)
 
     @abstractmethod
     def is_time_to_buy(self, row):
@@ -277,7 +260,7 @@ class Loopback(object):
         self.test_loopback_one(stock)
 
     def test_loopback_one(self, stock):
-        self.process_stock(stock)
+        process_stock(stock)
         result = self.loopback_one(stock)
         stock.set_loopback_result(result)
         stock.print_loopback_result()
@@ -289,6 +272,7 @@ class Loopback(object):
     def best_stocks(self, filt=None):
         period = 'from %s to %s' % (self.from_date, self.to_date if self.to_date else 'now')
         log.info('Best stocks %s', period)
+        log.info('stop benefit: %f%%, stop loss: %f%%', self.stop_benefit * 100, self.stop_loss * 100)
         self.print_loopback_condition()
         if filt:
             self.stocks = filter(filt, self.stocks)
@@ -296,23 +280,57 @@ class Loopback(object):
         # We only consider the stock we really purchased
         self.stocks = filter(lambda x: x.loopback_result is not None and x.loopback_result.ops, self.stocks)
         self.stocks = sorted(self.stocks, key=lambda x: x.loopback_result.benefit, reverse=True)
-        total_benefit = 0.0
+        benefits = []
+        hold_days = []
+        stocks = []
+        op_dates = []
         for stock in self.stocks:
-            stock.print_loopback_result()
-            total_benefit += stock.get_benefit()
+            _benefits = stock.get_benefits()
+            if _benefits:
+                stock.print_loopback_result()
+                stocks.append(stock)
+                benefits += _benefits
+                hold_days += stock.get_hold_days()
+                op_dates += stock.get_op_dates()
 
-        math_expt = total_benefit / len(self.stocks)
-        log.info('Benefit mathematical expectation: %f%%', math_expt * 100)
+        math_expt = sum(benefits) / len(benefits)
+        avg_hold_days = sum(hold_days) / 1.0 / len(hold_days)
+        log.info('Benefit mathematical expectation: %f%% for %d stocks in %d operations, average hold days: %f',
+                 math_expt * 100, len(stocks), len(benefits), avg_hold_days)
 
-        self.plot_benefit("%s Math expt: %f" % (period, math_expt), self.stocks)
+        self.plot_benefit("%s Math expt: %f" % (period, math_expt), stocks)
         # plot_hist(sorted_stocks)
 
         self.print_loopback_condition()
+        self.print_op_dates(op_dates)
         self.where_is_my_chance()
+        return math_expt, len(stocks), len(benefits), avg_hold_days
 
     @abstractmethod
     def where_is_my_chance(self):
         pass
+
+    def print_op_dates(self, op_dates, skip=True):
+        op_d = {}
+        for x in op_dates:
+            if x in op_d:
+                op_d[x] += 1
+            else:
+                op_d[x] = 1
+
+        x = sorted(op_d.keys())
+        y = [op_d[k] for k in x]
+        days_cnt = len(x)
+        days_2_cnt = len(filter(lambda x: x <= 2, y))
+        threashold = 10
+        days_more_than_t = len(filter(lambda x: x >= threashold, y))
+        log.info('Less than 2 chances: %d days of %d days', days_2_cnt, days_cnt)
+        log.info('More than %d chances: %d days of %d days', threashold, days_more_than_t, days_cnt)
+
+        if not skip:
+            plt.plot(x, y, 'ro')
+            plt.title('Chances per day')
+            plt.show()
 
 
 class LoopbackRSI(Loopback):
@@ -522,7 +540,7 @@ class LoopbackPeak(Loopback):
             op.slope = slope
             ops.append(op)
 
-        return LoopbackResult(0, ops)
+        return LoopbackResult(ops)
 
 
 class LoopbackBreakresistance(Loopback):
@@ -677,7 +695,7 @@ class LoopbackGrid(Loopback):
         # self.plot(avenues)
         log.info('Current hold cnt %d', self.cur_hold)
 
-        return LoopbackResult(avenue_rate_per_day[-1], [], len(avenue_rate_per_day))
+        return LoopbackResult([], len(avenue_rate_per_day))
 
     def plot(self, avenue_rate_per_day):
         plt.plot(avenue_rate_per_day)

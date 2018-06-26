@@ -108,6 +108,15 @@ class Stock(object):
     def get_benefit(self):
         return self.loopback_result.benefit
 
+    def get_benefits(self):
+        return self.loopback_result.get_benefits()
+
+    def get_hold_days(self):
+        return self.loopback_result.get_hold_days()
+
+    def get_op_dates(self):
+        return self.loopback_result.get_op_dates()
+
     def calc_trend_day_cnt(self, close_ma, volume_ma, volume_ratio):
         cnt = 0
         for idx in reversed(self.df.index):
