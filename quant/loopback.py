@@ -95,6 +95,10 @@ def create_pool(target):
     log.debug('Exit pool: %s, takes %d seconds', target, cost.total_seconds())
 
 
+def avg(l):
+    return sum(l) / 1.0 / len(l)
+
+
 class LoopInterResult(object):
     def __init__(self):
         self.last_macd = 0.0
@@ -277,14 +281,15 @@ class Loopback(object):
         if filt:
             self.stocks = filter(filt, self.stocks)
         self.loopback()
+        purchased_stocks = self.stocks
         # We only consider the stock we really purchased
-        self.stocks = filter(lambda x: x.loopback_result is not None and x.loopback_result.ops, self.stocks)
-        self.stocks = sorted(self.stocks, key=lambda x: x.loopback_result.benefit, reverse=True)
+        purchased_stocks = filter(lambda x: x.loopback_result is not None and x.loopback_result.ops, purchased_stocks)
+        purchased_stocks = sorted(purchased_stocks, key=lambda x: x.loopback_result.benefit, reverse=True)
         benefits = []
         hold_days = []
         stocks = []
         op_dates = []
-        for stock in self.stocks:
+        for stock in purchased_stocks:
             _benefits = stock.get_benefits()
             if _benefits:
                 stock.print_loopback_result()
@@ -293,8 +298,8 @@ class Loopback(object):
                 hold_days += stock.get_hold_days()
                 op_dates += stock.get_op_dates()
 
-        math_expt = sum(benefits) / len(benefits)
-        avg_hold_days = sum(hold_days) / 1.0 / len(hold_days)
+        math_expt = avg(benefits)
+        avg_hold_days = avg(hold_days)
         log.info('Benefit mathematical expectation: %f%% for %d stocks in %d operations, average hold days: %f',
                  math_expt * 100, len(stocks), len(benefits), avg_hold_days)
 
@@ -305,6 +310,7 @@ class Loopback(object):
         self.print_op_dates(op_dates)
         self.where_is_my_chance()
         return math_expt, len(stocks), len(benefits), avg_hold_days
+
 
     @abstractmethod
     def where_is_my_chance(self):
