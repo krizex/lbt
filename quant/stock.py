@@ -57,12 +57,16 @@ class Stock(object):
     def set_loopback_result(self, result):
         self.loopback_result = result
 
-    def print_loopback_result(self):
-        log.info('%s %s %f%%' % (self.code, self.name, self.loopback_result.benefit * 100))
+    def print_loopback_result(self, debug=False):
+        if debug:
+            output_log = log.debug
+        else:
+            output_log = log.info
+        output_log('%s %s %f%%' % (self.code, self.name, self.loopback_result.benefit * 100))
         if self.loopback_result.hold_days:
-            log.info('hold %d days', self.loopback_result.hold_days)
+            output_log('hold %d days', self.loopback_result.hold_days)
         for op in self.loopback_result.ops:
-            log.info('%s %s %f%%', op.op_in, op.op_out, op.benefit * 100)
+            output_log('%s %s %f%%', op.op_in, op.op_out, op.benefit * 100)
 
     def get_last_op(self):
         if not self.loopback_result:

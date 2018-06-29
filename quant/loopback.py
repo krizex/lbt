@@ -292,7 +292,7 @@ class Loopback(object):
         for stock in purchased_stocks:
             _benefits = stock.get_benefits()
             if _benefits:
-                stock.print_loopback_result()
+                stock.print_loopback_result(debug=True)
                 stocks.append(stock)
                 benefits += _benefits
                 hold_days += stock.get_hold_days()
@@ -738,9 +738,9 @@ class LoopbackTrend(Loopback):
 
         stocks = sorted(stocks, key=lambda x: x[0], reverse=True)
 
-        for i, stock in enumerate(stocks):
-            log.info('%d: up %d days', i+1, stock[0])
-            stock[1].print_loopback_result()
+        for i, (up_days, stock) in enumerate(stocks):
+            log.info('%d: up %d days', i+1, up_days)
+            stock.print_loopback_result()
 
     def is_time_to_sell(self, row):
         return False
