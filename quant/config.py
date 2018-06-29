@@ -32,3 +32,12 @@ logger = {
     'file': 'quant.log',
     'level': logging.DEBUG,
 }
+
+handlers = {
+    'term': {
+        'level': logging.INFO
+    },
+    'file': {
+        'level': logging.DEBUG
+    }
+}

@@ -30,10 +30,12 @@ class Logger(object):
         handler = RotatingFileHandler(
             os.path.join(log_file_dir, config.logger['file']))
         handler.setFormatter(formatter)
+        handler.setLevel(config.handlers['file']['level'])
         self.logger.addHandler(handler)
 
         term_handler = logging.StreamHandler()
         term_handler.setFormatter(formatter)
+        term_handler.setLevel(config.handlers['term']['level'])
         self.logger.addHandler(term_handler)
 
 
