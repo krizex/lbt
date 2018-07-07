@@ -4,7 +4,7 @@ import os
 import time
 from abc import abstractmethod, ABCMeta, abstractproperty
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from multiprocessing import Pool
 
 import signal
@@ -18,6 +18,8 @@ from quant.result import LoopbackResult
 from quant.stock import Stock
 import cPickle as pickle
 import matplotlib.pyplot as plt
+
+from quant.utils import days_between
 
 __author__ = 'Yang Qian'
 
@@ -180,6 +182,14 @@ class Loopback(object):
 
         return df
 
+    def trade_days(self):
+        if self.to_date is None:
+            to_date = date.today().strftime('%Y-%m-%d')
+        else:
+            to_date = self.to_date
+
+        return days_between(self.from_date, to_date) / 7 * 5
+
     def _set_inter_result(self, row):
         pass
 
@@ -275,7 +285,7 @@ class Loopback(object):
 
     def best_stocks(self, filt=None):
         period = 'from %s to %s' % (self.from_date, self.to_date if self.to_date else 'now')
-        log.info('Best stocks %s', period)
+        log.info('Best stocks %s, trade days: %d', period, self.trade_days())
         log.info('stop benefit: %f%%, stop loss: %f%%', self.stop_benefit * 100, self.stop_loss * 100)
         self.print_loopback_condition()
         if filt:
