@@ -60,10 +60,7 @@ def process_stock(stock):
         if len(stock.df) == 0:
             return stock
 
-        stock.add_macd()
-        stock.add_ma()
-        stock.add_vma()
-        stock.add_p_change()
+        stock.process()
     except:
         log.exception('Error occur when processing %s', stock.code)
 
@@ -823,6 +820,32 @@ class LoopbackPriceVol(Loopback):
                 self.is_time_to_check = False
 
         self.last_row = row
+
+    def plot_benefit(self, title, stocks):
+        pass
+
+
+class LoopbackBreak(Loopback):
+    def __init__(self, persist_f, from_date, to_date, stop_loss, stop_benefit):
+        super(LoopbackBreak, self).__init__(persist_f, from_date, to_date, stop_loss, stop_benefit)
+        self.buy_indicator = 'MAX_%d' % 22
+        self.sell_indicator = 'MIN_%d' % 11
+
+    def print_loopback_condition(self):
+        log.info('Loopback condition: break trend: buy: %s, sell: %s', self.buy_indicator, self.sell_indicator)
+
+    def where_is_my_chance(self):
+        log.info("=====Your chance=====")
+
+        stocks = filter(lambda stock: stock.break_nday_trend(self.buy_indicator), self.stocks)
+        for stock in stocks:
+            stock.print_loopback_result()
+
+    def is_time_to_sell(self, row):
+        return row['close'] < row[self.sell_indicator]
+
+    def is_time_to_buy(self, row):
+        return row['close'] >= row[self.buy_indicator]
 
     def plot_benefit(self, title, stocks):
         pass

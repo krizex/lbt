@@ -6,7 +6,7 @@ import signal
 from quant.filters import is_in_hs300, is_in_sz50, not_startup, is_in_zz500
 from quant.logger.logger import log
 from quant.loopback import LoopbackMACDRisingTrend, LoopbackPeak, LoopbackBreakresistance, LoopbackTrend, g_pool, \
-    setup_signal_handler, terminate_pool_and_exit, LoopbackPriceVol
+    setup_signal_handler, terminate_pool_and_exit, LoopbackPriceVol, LoopbackBreak
 
 __author__ = 'Yang Qian'
 
@@ -94,6 +94,12 @@ def find_x(start_date, (stop_start, stop_end, stop_step), (days_min, days_max, d
             pickle.dump(rets, f)
 
 
+def loopback_break_ndays(persist_f, from_date, to_date, stop_loss, stop_benefit):
+    loopback = LoopbackBreak(persist_f, from_date, to_date, stop_loss, stop_benefit)
+    loopback.init()
+    return loopback.best_stocks(is_in_hs300())
+
+
 def main():
     d_2017 = '2017-06-01'
     d_2018 = '2018-01-04'
@@ -109,10 +115,10 @@ def main():
     # find break resistance
     # loopback_break_resistance(None, d_2017, None, -0.03, 0.3, 30, 0.05)
 
-    loopback_trend(None, None, d_2018, None, -stop_rate, stop_rate, continue_days, 'MA5', 'V_MA10', 1)
+    # loopback_trend(None, None, d_2018, None, -stop_rate, stop_rate, continue_days, 'MA5', 'V_MA10', 1)
     # find_x(d_2018, (0.005, 0.05, 0.001), (3, 10, 1))
 
-    # loopback_vol_price(None, d_2017, None, -0.05, 0.01, 2.5)
+    loopback_break_ndays(None, d_2018, None, -1, 1)
 
 
 if __name__ == '__main__':

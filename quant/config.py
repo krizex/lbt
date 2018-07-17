@@ -35,7 +35,7 @@ logger = {
 
 handlers = {
     'term': {
-        'level': logging.INFO
+        'level': logging.DEBUG
     },
     'file': {
         'level': logging.DEBUG

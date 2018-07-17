@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from quant.helpers import is_rising_trend
-from quant.index.change import add_p_change
-from quant.index.ma import add_ma
-from quant.index.rsi import add_rsi
-from quant.index.macd import add_macd
-from quant.index.vma import add_vma
+from quant.indicator.change import add_p_change
+from quant.indicator.ma import add_ma
+from quant.indicator.rsi import add_rsi
+from quant.indicator.macd import add_macd
+from quant.indicator.vma import add_vma
+from quant.indicator.nday import add_nday_max, add_nday_min
 from quant.logger.logger import log
 
 __author__ = 'Yang Qian'
@@ -39,6 +40,14 @@ class Stock(object):
         except:
             return 'UNKNOWN'
 
+    def process(self):
+        self.add_macd()
+        self.add_ma()
+        self.add_vma()
+        self.add_p_change()
+        self.add_nday_max(22)
+        self.add_nday_min(11)
+
     def add_rsi(self, period):
         add_rsi(self.df, period)
 
@@ -53,6 +62,12 @@ class Stock(object):
 
     def add_p_change(self):
         add_p_change(self.df)
+
+    def add_nday_max(self, n):
+        add_nday_max(self.df, n)
+
+    def add_nday_min(self, n):
+        add_nday_min(self.df, n)
 
     def set_loopback_result(self, result):
         self.loopback_result = result
@@ -138,3 +153,8 @@ class Stock(object):
         today = self.df.shape[0] - 1
         row = self.df.loc[today]
         return row['volume'] / row['V_MA5']
+
+    def break_nday_trend(self, buy_indicator):
+        today = self.df.shape[0] - 1
+        row = self.df.loc[today]
+        return row['close'] >= row[buy_indicator]
