@@ -118,7 +118,7 @@ def main():
     # loopback_trend(None, None, d_2018, None, -stop_rate, stop_rate, continue_days, 'MA5', 'V_MA10', 1)
     # find_x(d_2018, (0.005, 0.05, 0.001), (3, 10, 1))
 
-    loopback_break_ndays(None, d_2018, None, -1, 1)
+    loopback_break_ndays(None, d_2017, None, -10, 10)
 
 
 if __name__ == '__main__':

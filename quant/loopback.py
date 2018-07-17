@@ -838,6 +838,7 @@ class LoopbackBreak(Loopback):
         log.info("=====Your chance=====")
 
         stocks = filter(lambda stock: stock.break_nday_trend(self.buy_indicator), self.stocks)
+        stocks = sorted(stocks, key=lambda stock: stock.get_benefit(), reverse=True)
         for stock in stocks:
             stock.print_loopback_result()
 
