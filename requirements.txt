@@ -1,2 +1,4 @@
+numpy
 tushare
-talib
+ta-lib
+matplotlib
