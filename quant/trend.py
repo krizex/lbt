@@ -17,5 +17,7 @@ def run_one(code, from_date, to_date, highest_days_n):
 
 if __name__ == '__main__':
     d_from = '2016-08-16'
-    d_to = '2018-08-16'
-    run_one('600737', d_from, d_to, 11)
+    d_to = '2019-08-16'
+    # run_one('600737', d_from, d_to, 11)
+    run_one('600201', d_from, d_to, 11)
+    # run_one('601318', d_from, d_to, 11)

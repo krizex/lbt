@@ -44,4 +44,15 @@ class Result(object, metaclass=ABCMeta):
 
     def print_ops(self, logger):
         for op in self.ops:
-            logger('%s', op)
+            benefit = self._find_benefit(op.date)
+            if benefit is not None:
+                logger('%s -> %+.2f%%', op, benefit * 100)
+            else:
+                logger('%s', op)
+
+    def _find_benefit(self, date):
+        for b in self.benefit:
+            if b[0] == date:
+                return b[1]
+
+        return None

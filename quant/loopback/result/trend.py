@@ -31,6 +31,9 @@ class TrendResult(Result):
             self.tmp_benefit += (op.price - last_op.price) * last_op.cnt
 
     def stop(self, op):
+        if not self.cur_hold:
+            # handle the faked `stop`
+            return
         benefit = sum([(op.price - unit.price) * unit.cnt for unit in self.cur_hold])
         benefit += self.tmp_benefit
         virtual_total_cost = self.calc_total_cost(self.cur_hold[0].price)
