@@ -37,6 +37,7 @@ class Result(object, metaclass=ABCMeta):
         pass
 
     def calc_benefit_rate(self):
+        self.benefit = []
         for op in self.ops:
             op.visit(self)
 

@@ -302,21 +302,22 @@ class Loopback(object, metaclass=ABCMeta):
         purchased_stocks = [x for x in purchased_stocks if x.loopback_result is not None and x.loopback_result.ops]
         purchased_stocks = sorted(purchased_stocks, key=lambda x: x.loopback_result.benefit, reverse=True)
         stocks = []
+        benefits = []
         # FIXME:
         for stock in purchased_stocks:
             if stock.get_ops():
                 log.info('')
-                benefit_rate = stock.get_benefit_rate()
                 log.info('>>> %s: +.2f%%', stock.code, benefit_rate * 100)
                 stock.print_loopback_result(debug=True)
                 stocks.append(stock)
+                benefits.append(stock.get_benefit_rate())
 
-        # math_expt = avg(benefits)
+        math_expt = avg(benefits)
         # avg_hold_days = avg(hold_days)
-        # log.info('Benefit mathematical expectation: %f%% for %d stocks in %d operations, average hold days: %f',
-        #          math_expt * 100, len(stocks), len(benefits), avg_hold_days)
+        log.info('Benefit mathematical expectation: %.2f%% for %d stocks',
+                 math_expt * 100, len(stocks))
 
-        self.plot_benefit("%s Math expt: %f" % (period, math_expt), stocks)
+        # self.plot_benefit("%s Math expt: %f" % (period, math_expt), stocks)
         # plot_hist(sorted_stocks)
 
         self.where_is_my_chance()
