@@ -47,13 +47,14 @@ def setup_signal_handler(handler):
 def build_stock(stock_info):
     (idx, (code, info)) = stock_info
     log.debug('%d Fetching %s %s', idx, code, info['name'])
-    try:
-        stock = Stock(code, info)
-        return stock
-    except Exception as e:
-        log.error('Error fetching %s', code)
-        return None
-
+    for _ in range(5):
+        try:
+            stock = Stock(code, info)
+            return stock
+        except Exception as e:
+            log.error('Error fetching %s, retrying...', code)
+            time.sleep(3)
+    return None
 
 def process_stock(stock):
     try:
