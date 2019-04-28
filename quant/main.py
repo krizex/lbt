@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import cPickle as pickle
+import pickle as pickle
 import signal
 
 from quant.filters import is_in_hs300, is_in_sz50, not_startup, is_in_zz500
@@ -57,13 +57,16 @@ def loopback_vol_price(persist_f, from_date, to_date, stop_loss, stop_benefit, v
     loopback.best_stocks(is_in_hs300())
 
 
-def print_parameter(prefix, (math_expect, stocks_cnt, ops_cnt, avg_hold_days, stop_rate, days)):
+def print_parameter(prefix, xxx_todo_changeme):
+    (math_expect, stocks_cnt, ops_cnt, avg_hold_days, stop_rate, days) = xxx_todo_changeme
     log.info('%s: stop_rate %f%%, continue days %d, '
              'math expect: %f%%, stocks count: %d, operations count: %d, avg hold days: %f',
              prefix, stop_rate * 100, days, math_expect * 100, stocks_cnt, ops_cnt, avg_hold_days)
 
 
-def find_x(start_date, (stop_start, stop_end, stop_step), (days_min, days_max, days_step)):
+def find_x(start_date, xxx_todo_changeme1, xxx_todo_changeme2):
+    (stop_start, stop_end, stop_step) = xxx_todo_changeme1
+    (days_min, days_max, days_step) = xxx_todo_changeme2
     loopback = LoopbackTrend(None, start_date, None, -stop_start, stop_start, days_min, 'MA5', 'V_MA10', 1)
     loopback.init()
     saved_stocks = loopback.stocks

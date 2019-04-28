@@ -15,9 +15,7 @@ from collections import namedtuple
 Unit = namedtuple('Unit', ['price', 'cnt'])
 
 
-class Result(object):
-    __metaclass__ = ABCMeta
-
+class Result(object, metaclass=ABCMeta):
     def __init__(self, ops):
         self.cur_hold = []
         self.benefit = []

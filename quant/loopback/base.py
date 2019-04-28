@@ -16,7 +16,7 @@ from quant.operation import Op
 from quant.peak import Peak
 from quant.result import LoopbackResult
 from quant.stock import Stock
-import cPickle as pickle
+import pickle as pickle
 import matplotlib.pyplot as plt
 
 from quant.utils import days_between
@@ -45,7 +45,8 @@ def setup_signal_handler(handler):
         signal.signal(sig, handler)
 
 
-def build_stock((idx, (code, info))):
+def build_stock(stock_info):
+    (idx, (code, info)) = stock_info
     log.debug('%d Fetching %s %s', idx, code, info['name'].decode('utf8'))
     try:
         stock = Stock(code, info)
@@ -67,7 +68,8 @@ def process_stock(stock):
     return stock
 
 
-def loopback_stock((loopback, stock)):
+def loopback_stock(info):
+    (loopback, stock) = info
     try:
         result = loopback.loopback_one(stock)
         stock.set_loopback_result(result)
@@ -104,9 +106,7 @@ class LoopInterResult(object):
         self.last_ma_gap = 0.0
 
 
-class Loopback(object):
-    __metaclass__ = ABCMeta
-
+class Loopback(object, metaclass=ABCMeta):
     def __init__(self, persist_f, from_date, to_date):
         self.persist_f = self.persiste_f_name(persist_f)
         self.from_date = from_date
@@ -155,7 +155,7 @@ class Loopback(object):
         stocks = ts.get_stock_basics()
         with create_pool('fetch stocks') as pool:
             ret = pool.map(build_stock, [(i, stock) for i, stock in enumerate(stocks.iterrows())])
-            ret = filter(lambda x: x is not None, ret)
+            ret = [x for x in ret if x is not None]
             return ret
 
     def loopback(self):
@@ -292,12 +292,12 @@ class Loopback(object):
         log.info('Best stocks %s, trade days: %d', period, self.trade_days())
         self.print_loopback_condition()
         if filt:
-            self.stocks = filter(filt, self.stocks)
+            self.stocks = list(filter(filt, self.stocks))
             log.info('Filter: %s', filt.__doc__)
         self.loopback()
         purchased_stocks = self.stocks
         # We only consider the stock we really purchased
-        purchased_stocks = filter(lambda x: x.loopback_result is not None and x.loopback_result.ops, purchased_stocks)
+        purchased_stocks = [x for x in purchased_stocks if x.loopback_result is not None and x.loopback_result.ops]
         purchased_stocks = sorted(purchased_stocks, key=lambda x: x.loopback_result.benefit, reverse=True)
         stocks = []
         # FIXME:

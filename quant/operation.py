@@ -10,9 +10,7 @@ Created on 06/24/2018
 
 from abc import abstractmethod, ABCMeta, abstractproperty
 
-class OpBase(object):
-    __metaclass__ = ABCMeta
-
+class OpBase(object, metaclass=ABCMeta):
     def __init__(self, date, price):
         self.date = date
         self.price = price

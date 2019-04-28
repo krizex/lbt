@@ -54,7 +54,7 @@ class Peak(object):
         if len(peaks) < 2:
             return []
 
-        return zip(peaks[:-1], peaks[1:])
+        return list(zip(peaks[:-1], peaks[1:]))
 
     def find_up_peaks(self):
         def filt(row):
