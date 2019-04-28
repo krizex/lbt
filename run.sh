@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec python -m quant.main
+exec python3 -m quant.trend

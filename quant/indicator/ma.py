@@ -17,5 +17,6 @@ def add_ma(df):
     df['MA5'] = talib.SMA(close, timeperiod=5)
     df['MA10'] = talib.SMA(close, timeperiod=10)
     df['MA20'] = talib.SMA(close, timeperiod=20)
+    df['MA40'] = talib.SMA(close, timeperiod=40)
     df['MA60'] = talib.SMA(close, timeperiod=60)
     df['MA180'] = talib.SMA(close, timeperiod=180)
