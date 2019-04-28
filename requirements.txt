@@ -2,3 +2,4 @@ numpy
 tushare
 ta-lib
 matplotlib
+xlrd>=1.0
