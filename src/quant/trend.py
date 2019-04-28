@@ -37,5 +37,5 @@ d_from = '2016-08-16'
 d_to = '2019-08-16'
 
 if __name__ == '__main__':
-    run_individals()
+    # run_individals()
     run_with_filter(d_from, d_to, 22, is_in_hs300())

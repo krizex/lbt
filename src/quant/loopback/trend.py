@@ -38,7 +38,11 @@ class LoopbackTrend(Loopback):
 
     def where_is_my_chance(self):
         log.info('=====Your chance=====')
-        log.info('TBD')
+        for stock in self.stocks:
+            highest = stock.highest_in_past_n_days(self.highest_day_n)
+            if stock.get_past_day_n(0)['close'] >= highest:
+                log.info('%s', stock)
+                stock.print_loopback_result()
 
     def plot_benefit(self, title, stocks):
         pass

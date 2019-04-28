@@ -56,6 +56,7 @@ def build_stock(stock_info):
             time.sleep(3)
     return None
 
+
 def process_stock(stock):
     try:
         if len(stock.df) == 0:
@@ -126,12 +127,13 @@ class Loopback(object, metaclass=ABCMeta):
 
     def read_stocks_from_persist(self):
         log.info("Read stocks from file:%s", self.persist_f)
-        with open(self.persist_f) as f:
+        with open(self.persist_f, 'rb') as f:
             return pickle.load(f)
 
     def persist_stocks(self, data):
         log.info("Persist stocks to file: %s", self.persist_f)
-        with open(self.persist_f, 'w') as f:
+        os.makedirs(os.path.dirname(self.persist_f), exist_ok=True)
+        with open(self.persist_f, 'wb') as f:
             pickle.dump(data, f)
 
     def fetch_stocks(self):
@@ -306,8 +308,6 @@ class Loopback(object, metaclass=ABCMeta):
         # FIXME:
         for stock in purchased_stocks:
             if stock.get_ops():
-                log.info('')
-                log.info('>>> %s: +.2f%%', stock.code, benefit_rate * 100)
                 stock.print_loopback_result(debug=True)
                 stocks.append(stock)
                 benefits.append(stock.get_benefit_rate())

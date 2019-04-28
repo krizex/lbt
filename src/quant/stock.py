@@ -28,6 +28,9 @@ class Stock(object):
         self.df = ts.get_k_data(code, retry_count=10)
         self.loopback_result = None
 
+    def __str__(self):
+        return '%s %s' % (self.code, self.name)
+
     @property
     def pe(self):
         return self.info['pe']
@@ -150,3 +153,10 @@ class Stock(object):
         today = self.df.shape[0] - 1
         row = self.df.loc[today]
         return row['close'] >= row[buy_indicator]
+
+    def highest_in_past_n_days(self, n):
+        return self.df[-n:-1]['high'].max()
+
+    def get_past_day_n(self, n):
+        today = self.df.shape[0] - 1
+        return self.df.loc[today - n]
