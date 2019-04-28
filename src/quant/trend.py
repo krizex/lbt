@@ -22,3 +22,7 @@ if __name__ == '__main__':
     run_one('600201', d_from, d_to, 22)
     run_one('000977', d_from, d_to, 22)
     run_one('601318', d_from, d_to, 22)
+    run_one('501029', d_from, d_to, 22)
+    run_one('510050', d_from, d_to, 22)
+    run_one('000063', d_from, d_to, 22)
+    run_one('600498', d_from, d_to, 22)

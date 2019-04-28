@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from quant.helpers import is_rising_trend
 from quant.indicator.change import add_p_change
 from quant.indicator.ma import add_ma
@@ -36,7 +35,8 @@ class Stock(object):
     @property
     def name(self):
         try:
-            return self.info['name'].decode('utf8')
+            # return self.info['name'].decode('utf8')
+            return self.info['name']
         except:
             return 'UNKNOWN'
 
@@ -74,7 +74,7 @@ class Stock(object):
 
     def print_loopback_result(self, debug=False):
         benefit_rate = self.get_benefit_rate()
-        log.info('>>> %s: %+.2f%%', self.code, benefit_rate * 100)
+        log.info('>>> %s %s: %+.2f%%', self.code, self.name, benefit_rate * 100)
         if debug:
             output_log = log.debug
         else:

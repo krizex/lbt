@@ -46,7 +46,7 @@ def setup_signal_handler(handler):
 
 def build_stock(stock_info):
     (idx, (code, info)) = stock_info
-    log.debug('%d Fetching %s %s', idx, code, info['name'].decode('utf8'))
+    log.debug('%d Fetching %s %s', idx, code, info['name'])
     try:
         stock = Stock(code, info)
         return stock
