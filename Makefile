@@ -12,6 +12,7 @@ build:
 .PHONY: debug
 debug:
 	docker run -it --rm \
+	--name $(APP_CONTAINER_NAME) \
 	-p $(HOST_DEBUG_PORT):$(CONTAINER_PORT) \
 	-v $(CUR_DIR)/src:/app \
 	$(IMAGE_LABEL):latest /bin/bash
@@ -19,7 +20,9 @@ debug:
 .PHONY: run stop restart attach
 
 run:
-	docker-compose up -d
+	docker run --rm \
+	--name $(APP_CONTAINER_NAME) \
+	$(IMAGE_LABEL):latest
 
 attach:
 	docker exec -it $(APP_CONTAINER_NAME) /bin/bash
