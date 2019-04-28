@@ -2,12 +2,13 @@ from .base import Loopback
 from quant.stock import Stock
 from quant.logger.logger import log
 from quant.operation import OpBuy, OpSell, OpStop
+from quant.loopback.result.trend import TrendResult
 
 
 
 class LoopbackTrend(Loopback):
     def __init__(self, persist_f, from_date, to_date, highest_day_n):
-        super(LoopbackTrend, self).__init__(persist_f, from_date, to_date, 10, 10)
+        super(LoopbackTrend, self).__init__(persist_f, from_date, to_date)
         self.highest_day_n = highest_day_n
         self.buy_steps = [200, 300, 300, 200]
         self.step_ratio = 0.05
@@ -16,7 +17,7 @@ class LoopbackTrend(Loopback):
         self.stop_down_ratio_of_ma = 0.03
 
     def init_internal_result(self):
-        super(LoopbackTrend, self).init_inter_result()
+        super(LoopbackTrend, self).init_internal_result()
         self._past_data = []
         self._cur_hold = 0
         self._start_price = 0.0
@@ -63,6 +64,8 @@ class LoopbackTrend(Loopback):
         if self._cur_hold >= len(self.buy_steps):
             return False
         elif self._cur_hold == 0:
+            if not self._past_data:
+                return False
             buy_price = self.highest_in_past()
         else:
             buy_price = self._start_price * ((1 + self.step_ratio) ** self._cur_hold)
@@ -93,7 +96,7 @@ class LoopbackTrend(Loopback):
                 return False
 
     def highest_in_past(self):
-        return max([row['highest'] for row in self._past_data])
+        return max([row['high'] for row in self._past_data])
 
     def calc_loopback_result(self):
-        return LoopbackTrendResult(self.ops, self.buy_steps, self.step_ratio)
+        return TrendResult(self.ops, self.buy_steps, self.step_ratio)

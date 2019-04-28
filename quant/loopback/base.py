@@ -12,9 +12,8 @@ import tushare as ts
 
 from quant.helpers import is_rising_trend
 from quant.logger.logger import log
-from quant.operation import Op
 from quant.peak import Peak
-from quant.result import LoopbackResult
+from quant.loopback.result.base import Result
 from quant.stock import Stock
 import pickle as pickle
 import matplotlib.pyplot as plt
@@ -197,7 +196,7 @@ class Loopback(object, metaclass=ABCMeta):
 
     @abstractmethod
     def calc_loopback_result(self):
-        return LoopbackResult(self.ops)
+        return Result(self.ops)
 
     def loopback_one(self, stock):
         df = self._select_range(stock.df)
@@ -218,7 +217,7 @@ class Loopback(object, metaclass=ABCMeta):
 
         # assume sell the stock in the last day
         self.stop(row)
-        return calc_loopback_result()
+        return self.calc_loopback_result()
 
     @abstractmethod
     def is_time_to_buy(self,row):
