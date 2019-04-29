@@ -21,7 +21,7 @@ def main():
             now = int(time.time())
             time_array = time.localtime(now)
             d_to = time.strftime("%Y-%m-%d", time_array)
-            stocks = find_chances(d_from, d_to, 22)
+            # stocks = find_chances(d_from, d_to, 22)
             # write_chances(stocks)
             _write_chances('xxxx')
         except:
