@@ -209,6 +209,8 @@ class Loopback(object, metaclass=ABCMeta):
     def loopback_one(self, stock):
         df = self._select_range(stock.df)
         self.init_internal_result()
+        op = None
+        row = None
         for _, row in df.iterrows():
             op = None
             if self.is_time_to_buy(row):
@@ -224,7 +226,7 @@ class Loopback(object, metaclass=ABCMeta):
             self.update_internal_result(row)
 
         # assume sell the stock in the last day
-        if op is None:
+        if op is None and row is not None:
             op = self.stop(row)
             self.update_operations(op)
         return self.calc_loopback_result()
