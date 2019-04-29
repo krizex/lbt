@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from quant.loopback.trend import LoopbackTrend
 from quant.filters import is_in_hs300, is_in_sz50, not_startup, is_in_zz500
+from quant.stockmgr import StockMgr
 
 __author__ = 'Yang Qian'
 
@@ -12,14 +13,14 @@ Created on 01/31/2018
 """
 
 def run_one(code, from_date, to_date, highest_days_n):
-    loopback = LoopbackTrend(None, from_date, to_date, highest_days_n)
+    loopback = LoopbackTrend(from_date, to_date, highest_days_n)
     loopback.run_loopback_one_by_code(code)
 
 
 def run_with_filter(from_date, to_date, highest_days_n, filt):
-    loopback = LoopbackTrend(None, from_date, to_date, highest_days_n)
-    loopback.init()
-    loopback.best_stocks(filt)
+    stockmgr = StockMgr(None)
+    loopback = LoopbackTrend(from_date, to_date, highest_days_n)
+    loopback.best_stocks(filt, stockmgr.stocks)
 
 
 def run_individals():

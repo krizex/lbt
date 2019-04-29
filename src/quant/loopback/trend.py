@@ -7,8 +7,8 @@ from quant.loopback.result.trend import TrendResult
 
 
 class LoopbackTrend(Loopback):
-    def __init__(self, persist_f, from_date, to_date, highest_day_n):
-        super(LoopbackTrend, self).__init__(persist_f, from_date, to_date)
+    def __init__(self, from_date, to_date, highest_day_n):
+        super(LoopbackTrend, self).__init__(from_date, to_date)
         self.highest_day_n = highest_day_n
         self.buy_steps = [200, 300, 300, 200]
         self.step_ratio = 0.05
@@ -36,9 +36,9 @@ class LoopbackTrend(Loopback):
         log.info('stop condition: %.2f%% downside %s', self.stop_down_ratio_of_ma * 100, self.stop_ma)
         log.info('>>>>>>>>>>>>><<<<<<<<<<<<<')
 
-    def where_is_my_chance(self):
+    def where_is_my_chance(self, stocks):
         log.info('=====Your chance=====')
-        for stock in self.stocks:
+        for stock in stocks:
             highest = stock.highest_in_past_n_days(self.highest_day_n)
             if stock.get_past_day_n(0)['close'] >= highest:
                 log.info('%s', stock)
