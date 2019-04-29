@@ -30,6 +30,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 RUN rm -f requirements.txt
 
+ENV TZ Asia/Shanghai
 COPY src/ /app/
 WORKDIR /app
 EXPOSE 8000

@@ -25,7 +25,7 @@ class S(BaseHTTPRequestHandler):
         js = read_chances()
         # self.wfile.write(bytes("<html><body><h1>hi!</h1></body></html>", 'utf-8'))
         if js is None:
-            self.wfile.write(bytes('', 'utf-8'))
+            self.wfile.write(bytes('{}', 'utf-8'))
         else:
             self.wfile.write(bytes(json.dumps(js), 'utf-8'))
 

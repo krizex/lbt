@@ -28,7 +28,7 @@ scanner = {
 }
 
 logger = {
-    'path': os.path.join(root_node['path'], 'logs'),
+    'path': '/var/log',
     'file': 'quant.log',
     'level': logging.DEBUG,
 }
