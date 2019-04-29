@@ -30,7 +30,7 @@ attach:
 	docker exec -it $(APP_CONTAINER_NAME) /bin/bash
 
 stop:
-	docker-compose down
+	docker stop $(APP_CONTAINER_NAME)
 
 restart: stop run
 
