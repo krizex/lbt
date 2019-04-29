@@ -1,6 +1,7 @@
 IMAGE_LABEL := krizex/lbt
 CONTAINER_PORT := 8000
 HOST_DEBUG_PORT := 8000
+HOST_RUN_PORT := 8080
 CUR_DIR := $(shell pwd)
 APP_CONTAINER_NAME := lbt
 
@@ -20,8 +21,9 @@ debug:
 .PHONY: run stop restart attach
 
 run:
-	docker run --rm \
+	docker run --rm -d \
 	--name $(APP_CONTAINER_NAME) \
+	-p $(HOST_RUN_PORT):$(CONTAINER_PORT) \
 	$(IMAGE_LABEL):latest
 
 attach:

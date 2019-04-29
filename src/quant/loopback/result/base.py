@@ -43,13 +43,17 @@ class Result(object, metaclass=ABCMeta):
 
         return sum([benefit for _, benefit in self.benefit])
 
-    def print_ops(self, logger):
+    def str_of_ops(self):
+        ret = []
         for op in self.ops:
             benefit = self._find_benefit(op.date)
             if benefit is not None:
-                logger('%s -> %+.2f%%', op, benefit * 100)
+                ret.append('%s -> %+.2f%%' % (op, benefit * 100))
             else:
-                logger('%s', op)
+                ret.append('%s' % op)
+
+        return ret
+
 
     def _find_benefit(self, date):
         for b in self.benefit:

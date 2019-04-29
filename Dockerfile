@@ -34,4 +34,4 @@ COPY src/ /app/
 WORKDIR /app
 EXPOSE 8000
 
-CMD ./run.sh
+CMD ./run-server.sh

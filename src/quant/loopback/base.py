@@ -157,20 +157,33 @@ class Loopback(object, metaclass=ABCMeta):
         plt.title('Benefit hist')
         plt.show()
 
-    def run_loopback_one_by_code(self, code):
-        df = ts.get_stock_basics()
+    def run_loopback_one_by_code(self, code, name=None):
+        df = None
+        for _ in range(10):
+            try:
+                df = ts.get_stock_basics()
+                break
+            except:
+                log.warn('Retrying get stock basics')
+
+        if df is None:
+            raise RuntimeError('Unable to get stock basics')
+
         try:
             info = df.loc[code]
         except Exception:
             info = {'name': 'unknown'}
+        if name is not None:
+            info['name'] = name
         stock = Stock(code, info)
-        self.run_loopback_one(stock)
+        return self.run_loopback_one(stock)
 
     def run_loopback_one(self, stock):
         process_stock(stock)
         result = self.loopback_one(stock)
         stock.set_loopback_result(result)
         stock.print_loopback_result()
+        return stock
 
     @abstractmethod
     def print_loopback_condition(self):
@@ -213,4 +226,6 @@ class Loopback(object, metaclass=ABCMeta):
     def where_is_my_chance(self, stocks):
         pass
 
-
+    @abstractmethod
+    def is_chance_for(self, stock):
+        pass

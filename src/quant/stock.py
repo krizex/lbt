@@ -76,13 +76,20 @@ class Stock(object):
         self.loopback_result = result
 
     def print_loopback_result(self, debug=False):
-        benefit_rate = self.get_benefit_rate()
+        benefit_rate, ops = self.get_loopback_result()
         log.info('>>> %s %s: %+.2f%%', self.code, self.name, benefit_rate * 100)
         if debug:
             output_log = log.debug
         else:
             output_log = log.info
-        self.loopback_result.print_ops(output_log)
+
+        for op in ops:
+            output_log(op)
+
+    def get_loopback_result(self):
+        benefit_rate = self.get_benefit_rate()
+        ops = self.loopback_result.str_of_ops()
+        return benefit_rate, ops
 
     def get_last_op(self):
         if not self.loopback_result:

@@ -36,11 +36,16 @@ class LoopbackTrend(Loopback):
         log.info('stop condition: %.2f%% downside %s', self.stop_down_ratio_of_ma * 100, self.stop_ma)
         log.info('>>>>>>>>>>>>><<<<<<<<<<<<<')
 
+    def is_chance_for(self, stock):
+        highest = stock.highest_in_past_n_days(self.highest_day_n)
+        if stock.get_past_day_n(0)['close'] >= highest:
+            return True
+        return False
+
     def where_is_my_chance(self, stocks):
         log.info('=====Your chance=====')
         for stock in stocks:
-            highest = stock.highest_in_past_n_days(self.highest_day_n)
-            if stock.get_past_day_n(0)['close'] >= highest:
+            if self.is_chance_for(stock):
                 log.info('%s', stock)
                 stock.print_loopback_result()
 
