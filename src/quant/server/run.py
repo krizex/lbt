@@ -21,9 +21,12 @@ def main():
             now = int(time.time())
             time_array = time.localtime(now)
             d_to = time.strftime("%Y-%m-%d", time_array)
-            # stocks = find_chances(d_from, d_to, 22)
-            # write_chances(stocks)
-            _write_chances('xxxx')
+            start = time.time()
+            stocks = find_chances(d_from, d_to, 22)
+            end = time.time()
+            write_chances(stocks, end - start)
+        except KeyboardInterrupt:
+            raise
         except:
             log.exception('Fail to write chances')
 
