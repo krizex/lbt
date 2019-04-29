@@ -16,6 +16,7 @@ debug:
 	--name $(APP_CONTAINER_NAME) \
 	-p $(HOST_DEBUG_PORT):$(CONTAINER_PORT) \
 	-v $(CUR_DIR)/src:/app \
+	-v /etc/localtime:/etc/localtime:ro \
 	$(IMAGE_LABEL):latest /bin/bash
 
 .PHONY: run stop restart attach
@@ -24,6 +25,7 @@ run:
 	docker run --rm -d \
 	--name $(APP_CONTAINER_NAME) \
 	-p $(HOST_RUN_PORT):$(CONTAINER_PORT) \
+	-v /etc/localtime:/etc/localtime:ro \
 	$(IMAGE_LABEL):latest
 
 attach:

@@ -18,11 +18,8 @@ def main():
     d_from = '2016-01-01'
     while True:
         try:
-            now = int(time.time())
-            time_array = time.localtime(now)
-            d_to = time.strftime("%Y-%m-%d", time_array)
             start = time.time()
-            stocks = find_chances(d_from, d_to, 22)
+            stocks = find_chances(d_from, None, 22)
             end = time.time()
             write_chances(stocks, end - start)
         except KeyboardInterrupt:
