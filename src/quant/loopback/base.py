@@ -34,6 +34,11 @@ def terminate_pool_and_exit(signum, frame):
     log.warn('Handle signal')
     if g_pool is not None:
         log.info('Closing pool...')
+        for p in g_pool._pool:
+            os.kill(p.pid, signal.SIGKILL)
+        # .is_alive() will reap dead process
+        while any(p.is_alive() for p in g_pool._pool):
+            pass
         g_pool.terminate()
         g_pool.join()
     exit(1)
