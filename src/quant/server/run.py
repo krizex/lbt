@@ -2,7 +2,7 @@ import threading
 import time
 from quant import dummy_web_server
 from quant.trend import find_chances
-from quant.server.chances import _write_chances
+from quant.server.chances import write_chances
 from quant.logger.logger import log
 
 
