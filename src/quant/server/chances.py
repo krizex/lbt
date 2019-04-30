@@ -2,7 +2,9 @@ import threading
 import time
 
 lock = threading.Lock()
-g_chances = None
+g_chances = {
+    'timestamp': 'NOT STARTED'
+}
 
 def write_chances(stocks, duration):
     chances = []
