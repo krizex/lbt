@@ -27,14 +27,10 @@ def run_with_filter(from_date, to_date, highest_days_n, filt):
 
 def find_chances(from_date, to_date, highest_days_n):
     rets = []
-    codes = get_codes(ts.get_hs300s())
-    for code in codes:
-        loopback = LoopbackTrend(from_date, to_date, highest_days_n)
-        stock = loopback.run_loopback_one_by_code(code)
-        if loopback.is_chance_for(stock):
-            rets.append(stock)
+    codes = [(code, None) for code in get_codes(ts.get_hs300s())]
 
-    codes = [
+    # customize
+    codes += [
         ('162411', 'HBYQ'),
         ('512000', 'QS-ETF'),
         ('501029', 'BPHL'),
@@ -49,6 +45,8 @@ def find_chances(from_date, to_date, highest_days_n):
         if loopback.is_chance_for(stock):
             rets.append(stock)
 
+
+    rets.sort(key=lambda s: s.get_benefit_rate() , reverse=True)
     log.info('==========Your chances ==========')
     for stock in rets:
         log.info(stock)
