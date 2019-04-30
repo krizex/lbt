@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from quant.loopback.trend import LoopbackTrend
 from quant.filters import is_in_hs300, is_in_sz50, not_startup, is_in_zz500, get_codes
 from quant.stockmgr import StockMgr
 import tushare as ts
 from quant.logger.logger import log
-from quant.utils import create_pool
 
 __author__ = 'Yang Qian'
 
@@ -45,10 +45,13 @@ def find_chances(from_date, to_date, highest_days_n):
         ('513030', 'DAX'),
     ]
 
-    with create_pool('loopback-1-by-1') as pool:
-       rets = pool.starmap(_loopback_stock, [(code, name, from_date, to_date, highest_days_n) for code, name in codes])
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        tasks = [executor.submit(_loopback_stock, code, name, from_date, to_date, highest_days_n) for code, name in codes]
+        for task in as_completed(tasks):
+            stock, is_chance = task.result()
+            if is_chance:
+                rets.append(stock)
 
-    rets = [stock for stock, is_chance in rets if is_chance]
     rets.sort(key=lambda s: s.get_benefit_rate() , reverse=True)
     log.info('==========Your chances ==========')
     for stock in rets:
