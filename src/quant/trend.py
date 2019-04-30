@@ -5,6 +5,7 @@ from quant.filters import is_in_hs300, is_in_sz50, not_startup, is_in_zz500, get
 from quant.stockmgr import StockMgr
 import tushare as ts
 from quant.logger.logger import log
+from quant.utils import create_pool
 
 __author__ = 'Yang Qian'
 
@@ -25,6 +26,11 @@ def run_with_filter(from_date, to_date, highest_days_n, filt):
     loopback.best_stocks(filt, stockmgr.stocks)
 
 
+def _loopback_stock(code, name, from_date, to_date, highest_days_n):
+    loopback = LoopbackTrend(from_date, to_date, highest_days_n)
+    stock = loopback.run_loopback_one_by_code(code, name)
+    return stock, loopback.is_chance_for(stock)
+
 def find_chances(from_date, to_date, highest_days_n):
     rets = []
     codes = [(code, None) for code in get_codes(ts.get_hs300s())]
@@ -39,13 +45,10 @@ def find_chances(from_date, to_date, highest_days_n):
         ('513030', 'DAX'),
     ]
 
-    for code, name in codes:
-        loopback = LoopbackTrend(from_date, to_date, highest_days_n)
-        stock = loopback.run_loopback_one_by_code(code, name)
-        if loopback.is_chance_for(stock):
-            rets.append(stock)
+    with create_pool('loopback-1-by-1') as pool:
+       rets = pool.starmap(_loopback_stock, [(code, name, from_date, to_date, highest_days_n) for code, name in codes])
 
-
+    rets = [stock for stock, is_chance in rets if is_chance]
     rets.sort(key=lambda s: s.get_benefit_rate() , reverse=True)
     log.info('==========Your chances ==========')
     for stock in rets:

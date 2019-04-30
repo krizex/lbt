@@ -44,7 +44,7 @@ def setup_signal_handler(handler):
 
 g_pool = None
 @contextmanager
-def create_pool(target):
+def create_pool(target, size=4):
     global g_pool
     if g_pool is None:
         setup_signal_handler(signal.SIG_IGN)
