@@ -47,7 +47,7 @@ def find_chances(from_date, to_date, highest_days_n):
         loopback = LoopbackTrend(from_date, to_date, highest_days_n)
         stock = loopback.run_loopback_one_by_code(code, name)
         if loopback.is_chance_for(stock):
-            rets.append(stock.get_loopback_result())
+            rets.append(stock)
 
     log.info('==========Your chances ==========')
     for stock in rets:
