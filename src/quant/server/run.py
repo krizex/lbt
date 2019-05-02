@@ -1,5 +1,7 @@
 import threading
 import time
+import gc
+import objgraph
 from quant import dummy_web_server
 from quant.trend import find_chances
 from quant.server.chances import write_chances
@@ -17,6 +19,8 @@ def main():
 
     d_from = '2016-01-01'
     while True:
+        gc.collect()
+        log.info('%s', objgraph.most_common_types(limit=50))
         try:
             start = time.time()
             stocks = find_chances(d_from, None, 22)
