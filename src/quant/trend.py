@@ -33,15 +33,25 @@ def _loopback_stock(code, name, from_date, to_date, highest_days_n):
     return stock, loopback.is_chance_for(stock)
 
 def find_chances(from_date, to_date, highest_days_n):
-    rets = []
-    codes = [(code, None) for code in get_codes(ts.get_hs300s())]
+    def _in_list(code, l):
+        for c, _ in l:
+            if code == c:
+                return True
+        return False
 
+    # customize
     resp = requests.get('http://lamp:8000/trend/records/')
     js = resp.json()
     log.info('customize stocks: %s', js)
-    # customize
-    codes += js
+    codes = js
 
+    for code in get_codes(ts.get_hs300s()):
+        if _in_list(code, codes):
+            continue
+        else:
+            codes.append((code, None))
+
+    rets = []
     with ThreadPoolExecutor(max_workers=4) as executor:
         tasks = [executor.submit(_loopback_stock, code, name, from_date, to_date, highest_days_n) for code, name in codes]
         for task in as_completed(tasks):
