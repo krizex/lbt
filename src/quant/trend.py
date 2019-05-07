@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from quant.loopback.trend import LoopbackTrend
 from quant.filters import is_in_hs300, is_in_sz50, not_startup, is_in_zz500, get_codes
@@ -32,18 +33,16 @@ def _loopback_stock(code, name, from_date, to_date, highest_days_n):
     return stock, loopback.is_chance_for(stock)
 
 def find_chances(from_date, to_date, highest_days_n):
+    resp = requests.get('http://lamp:8000/trends/records/')
+    js = resp.json()
+
+    log.info('customize stocks: %s', js)
+
     rets = []
     codes = [(code, None) for code in get_codes(ts.get_hs300s())]
 
     # customize
-    codes += [
-        ('162411', 'HBYQ'),
-        ('512000', 'QS-ETF'),
-        ('501029', 'BPHL'),
-        ('510050', '50-ETF'),
-        ('518880', 'GOLD-ETF'),
-        ('513030', 'DAX'),
-    ]
+    codes += js
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         tasks = [executor.submit(_loopback_stock, code, name, from_date, to_date, highest_days_n) for code, name in codes]

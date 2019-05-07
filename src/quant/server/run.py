@@ -26,6 +26,7 @@ def main():
             raise
         except:
             log.exception('Fail to write chances')
+            time.sleep(10)
 
 
 if __name__ == '__main__':
