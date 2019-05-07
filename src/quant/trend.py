@@ -33,14 +33,12 @@ def _loopback_stock(code, name, from_date, to_date, highest_days_n):
     return stock, loopback.is_chance_for(stock)
 
 def find_chances(from_date, to_date, highest_days_n):
-    resp = requests.get('http://lamp:8000/trends/records/')
-    js = resp.json()
-
-    log.info('customize stocks: %s', js)
-
     rets = []
     codes = [(code, None) for code in get_codes(ts.get_hs300s())]
 
+    resp = requests.get('http://lamp:8000/trend/records/')
+    js = resp.json()
+    log.info('customize stocks: %s', js)
     # customize
     codes += js
 
