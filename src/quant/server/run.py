@@ -17,27 +17,31 @@ def is_time_to_run(prev, now, expt):
     return prev <= expt <= now
 
 
+def do_once():
+    d_from = '2016-01-01'
+    try:
+        start = time.time()
+        stocks = find_chances(d_from, None, 22)
+        end = time.time()
+        write_chances(stocks, end - start)
+    except KeyboardInterrupt:
+        raise
+    except:
+        log.exception('Fail to write chances')
+
+
 def main():
     web_t = WebServerThread()
     web_t.start()
 
-    d_from = '2016-01-01'
-
+    do_once()
     prev_check = datetime.datetime.now()
     while True:
         gc.collect()
         expect = datetime.datetime(prev_check.year, prev_check.month, prev_check.day, hour=15, minute=30, second=0)
         now_check = datetime.datetime.now()
         if is_time_to_run(prev_check, now_check, expect):
-            try:
-                start = time.time()
-                stocks = find_chances(d_from, None, 22)
-                end = time.time()
-                write_chances(stocks, end - start)
-            except KeyboardInterrupt:
-                raise
-            except:
-                log.exception('Fail to write chances')
+            do_once()
         else:
             time.sleep(60)
 
