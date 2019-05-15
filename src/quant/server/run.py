@@ -14,7 +14,7 @@ class WebServerThread(threading.Thread):
 
 
 def is_time_to_run(prev, now, expt):
-    return prev <= expt <= now
+    return prev < expt <= now
 
 
 def do_once():
