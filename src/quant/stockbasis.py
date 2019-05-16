@@ -1,4 +1,4 @@
-from quant.log import log
+from quant.logger.logger import log
 import time
 import tushare as ts
 import json
