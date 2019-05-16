@@ -11,7 +11,8 @@ def fetch_basis():
     log.info('Fetched')
     df = ret[['ts_code', 'name']]
     df = df.set_index('ts_code')
-    return df.to_json(orient='index')
+    s = df.to_json(orient='index')
+    return json.loads(s)
 
 
 class __StockBasisMgr(object):
@@ -25,7 +26,7 @@ class __StockBasisMgr(object):
                 self.basis = fetch_basis()
                 break
             except:
-                log.warn('Re-fetch basis')
+                log.exception('Re-fetch basis')
                 time.sleep(10)
 
     def full_code(self, code):
