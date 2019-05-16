@@ -15,7 +15,7 @@ from quant.stock import Stock
 import matplotlib.pyplot as plt
 from quant.stockmgr import process_stock
 from quant.utils import days_between, create_pool
-from quant.stockbasismgr import StockBasisMgr
+from quant.stockbasis import StockBasisMgr
 
 __author__ = 'Yang Qian'
 
