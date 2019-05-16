@@ -78,20 +78,18 @@ def find_chances(from_date, to_date, highest_days_n):
 
 
 def run_individals():
-    run_one('600737', d_from, d_to, 22)
-    run_one('600201', d_from, d_to, 22)
-    run_one('000977', d_from, d_to, 22)
-    run_one('601318', d_from, d_to, 22)
-    run_one('501029', d_from, d_to, 22)
-    run_one('510050', d_from, d_to, 22)
-    run_one('000063', d_from, d_to, 22)
-    run_one('600498', d_from, d_to, 22)
+    run_one('600737', d_from, None, 22)
+    run_one('600201', d_from, None, 22)
+    run_one('000977', d_from, None, 22)
+    run_one('601318', d_from, None, 22)
+    run_one('501029', d_from, None, 22)
+    run_one('510050', d_from, None, 22)
+    run_one('000063', d_from, None, 22)
+    run_one('600498', d_from, None, 22)
 
 
 d_from = '2016-08-16'
-d_to = '2019-08-16'
 
 if __name__ == '__main__':
-    # run_individals()
-    # run_with_filter(d_from, d_to, 22, is_in_hs300())
-    find_chances(d_from, d_to, 22)
+    run_individals()
+    # find_chances(d_from, None, 22)
