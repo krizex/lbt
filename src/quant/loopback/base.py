@@ -104,7 +104,7 @@ class Loopback(object, metaclass=ABCMeta):
             self.update_internal_result(row)
 
         # assume sell the stock in the last day
-        if op is None and row is not None:
+        if row is not None:
             op = self.stop(row)
             self.update_operations(op)
         return self.calc_loopback_result()
