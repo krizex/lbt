@@ -14,8 +14,8 @@ from quant.loopback.result.base import Result
 from quant.stock import Stock
 import matplotlib.pyplot as plt
 from quant.stockmgr import process_stock
-
 from quant.utils import days_between, create_pool
+from quant.stockbasismgr import StockBasisMgr
 
 __author__ = 'Yang Qian'
 
@@ -158,23 +158,12 @@ class Loopback(object, metaclass=ABCMeta):
         plt.show()
 
     def run_loopback_one_by_code(self, code, name=None):
-        df = None
-        for _ in range(10):
+        if name is None:
             try:
-                df = ts.get_stock_basics()
-                break
-            except:
-                log.warn('Retrying get stock basics')
-
-        if df is None:
-            raise RuntimeError('Unable to get stock basics')
-
-        try:
-            info = df.loc[code]
-        except Exception:
-            info = {'name': 'unknown'}
-        if name is not None:
-            info['name'] = name
+                name = StockBasisMgr.get_stock_name(code)
+            except Exception:
+                name = 'unknown'
+        info = {'name': name}
         stock = Stock(code, info)
         return self.run_loopback_one(stock)
 
