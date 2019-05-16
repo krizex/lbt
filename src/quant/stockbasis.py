@@ -5,7 +5,7 @@ import json
 import os
 
 def fetch_basis():
-    log.info('Fetching stock basics...')
+    log.info('Fetching stock basis...')
     pro = ts.pro_api('4105aca09e41fde2adac11ff8cdf7e05cef205d946e06935562e0010')
     ret = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
     log.info('Fetched')
