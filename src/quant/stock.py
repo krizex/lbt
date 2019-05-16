@@ -162,7 +162,7 @@ class Stock(object):
         return row['close'] >= row[buy_indicator]
 
     def highest_in_past_n_days(self, n):
-        return self.df[-n:-1]['high'].max()
+        return self.df[-n-1:-1]['high'].max()
 
     def get_past_day_n(self, n):
         today = self.df.shape[0] - 1
