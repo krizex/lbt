@@ -162,6 +162,7 @@ class Loopback(object, metaclass=ABCMeta):
             try:
                 name = StockBasisMgr.get_stock_name(code)
             except Exception:
+                log.exception('')
                 name = 'unknown'
         info = {'name': name}
         stock = Stock(code, info)
