@@ -7,6 +7,7 @@ from quant.filters import is_in_hs300, is_in_sz50, not_startup, is_in_zz500, get
 from quant.stockmgr import StockMgr
 import tushare as ts
 from quant.logger.logger import log
+from quant.stockbasis import StockBasisMgr
 
 __author__ = 'Yang Qian'
 
