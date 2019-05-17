@@ -37,8 +37,12 @@ def _loopback_stock(code, name, from_date, to_date, highest_days_n):
 def get_customize_codes():
     for _ in range(10):
         try:
+            js = []
             resp = requests.get('http://lamp:8000/trend/records/')
-            return resp.json()
+            js += resp.json()
+            resp = requests.get('http://lamp:8000/rebound/records/')
+            js += resp.json()
+            return js
         except:
             time.sleep(10)
 
