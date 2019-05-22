@@ -6,16 +6,20 @@ g_chances = {
     'timestamp': 'NOT STARTED'
 }
 
-def write_chances(stocks, duration):
+def write_chances(stocks, underestimate_stocks, duration):
     chances = []
     for stock in stocks:
         benefit, ops = stock.get_loopback_result()
         chances.append((stock.code, stock.name, benefit, ops))
 
-    _write_chances(chances, duration)
+    underestimate_chances = []
+    for pos, stock in underestimate_stocks:
+        underestimate_chances.append((stock.code, stock.name, pos))
+
+    _write_chances(chances, underestimate_chances, duration)
 
 
-def _write_chances(chances, duration):
+def _write_chances(chances, underestimate_chances, duration):
     global g_chances
     with lock:
         now = int(time.time())
@@ -25,6 +29,7 @@ def _write_chances(chances, duration):
             'timestamp': cur_time,
             'duration': duration,
             'data': chances,
+            'underestimate_chances': underestimate_chances,
         }
 
 

@@ -219,3 +219,14 @@ class Loopback(object, metaclass=ABCMeta):
     @abstractmethod
     def is_chance_for(self, stock):
         pass
+
+    def cur_price_pos_in_history(self, stock):
+        closes = [float(x) for x in stock.df['close']]
+        today_close = stock.get_past_day_n(0)['close']
+        cnt = 0
+        for c in closes:
+            if c <= today_close:
+                cnt += 1
+
+        return cnt / 1.0 / len(closes)
+

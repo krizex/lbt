@@ -31,7 +31,8 @@ def run_with_filter(from_date, to_date, highest_days_n, filt):
 def _loopback_stock(code, name, from_date, to_date, highest_days_n):
     loopback = LoopbackTrend(from_date, to_date, highest_days_n)
     stock = loopback.run_loopback_one_by_code(code, name)
-    return stock, loopback.is_chance_for(stock)
+    return stock, loopback.is_chance_for(stock), loopback.cur_price_pos_in_history(stock)
+
 
 
 def get_customize_codes():
@@ -66,19 +67,28 @@ def find_chances(from_date, to_date, highest_days_n):
             codes.append((code, None))
 
     rets = []
+    cur_pos_rets = []
     with ThreadPoolExecutor(max_workers=4) as executor:
         tasks = [executor.submit(_loopback_stock, code, name, from_date, to_date, highest_days_n) for code, name in codes]
         for task in as_completed(tasks):
-            stock, is_chance = task.result()
+            stock, is_chance, cur_pos = task.result()
             if is_chance:
                 rets.append(stock)
 
-    rets.sort(key=lambda s: s.get_benefit_rate() , reverse=True)
-    log.info('==========Your chances ==========')
+            if cur_pos <= 0.2:
+                cur_pos_rets.append((cur_pos, stock))
+
+    rets.sort(key=lambda s: s.get_benefit_rate(), reverse=True)
+    log.info('==========Your chances==========')
     for stock in rets:
         log.info(stock)
 
-    return rets
+    cur_pos_rets.sort(key=lambda s: s[0])
+    log.info('==========Underestimate==========')
+    for _, stock in rets:
+        log.info(stock)
+
+    return rets, cur_pos_rets
 
 
 def run_individals():

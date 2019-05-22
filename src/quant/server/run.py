@@ -21,9 +21,9 @@ def do_once():
     d_from = '2016-01-01'
     try:
         start = time.time()
-        stocks = find_chances(d_from, None, 22)
+        stocks, underestimate_stocks = find_chances(d_from, None, 22)
         end = time.time()
-        write_chances(stocks, end - start)
+        write_chances(stocks, underestimate_stocks, end - start)
     except KeyboardInterrupt:
         raise
     except:
