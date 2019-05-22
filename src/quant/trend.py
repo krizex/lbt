@@ -8,6 +8,7 @@ from quant.stockmgr import StockMgr
 import tushare as ts
 from quant.logger.logger import log
 from quant.stockbasis import StockBasisMgr
+import time
 
 __author__ = 'Yang Qian'
 
@@ -75,7 +76,7 @@ def find_chances(from_date, to_date, highest_days_n):
             if is_chance:
                 rets.append(stock)
 
-            if cur_pos <= 0.2:
+            if cur_pos <= 0.1:
                 cur_pos_rets.append((cur_pos, stock))
 
     rets.sort(key=lambda s: s.get_benefit_rate(), reverse=True)
@@ -85,7 +86,7 @@ def find_chances(from_date, to_date, highest_days_n):
 
     cur_pos_rets.sort(key=lambda s: s[0])
     log.info('==========Underestimate==========')
-    for _, stock in rets:
+    for _, stock in cur_pos_rets:
         log.info(stock)
 
     return rets, cur_pos_rets
