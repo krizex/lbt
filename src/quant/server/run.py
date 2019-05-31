@@ -28,6 +28,7 @@ def do_once():
         raise
     except:
         log.exception('Fail to write chances')
+        raise
 
 
 def main():
@@ -41,7 +42,12 @@ def main():
         expect = datetime.datetime(prev_check.year, prev_check.month, prev_check.day, hour=15, minute=30, second=0)
         now_check = datetime.datetime.now()
         if is_time_to_run(prev_check, now_check, expect):
-            do_once()
+            for _ in range(10):
+                try:
+                    do_once()
+                    break
+                except:
+                    log.warn('do_once fails, retrying...')
         else:
             time.sleep(60)
 
